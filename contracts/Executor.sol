@@ -32,6 +32,8 @@ pragma solidity ^0.8.4;
  *      read or written for that element.
  */
 contract Executor {
+    event Executed(bytes result);
+
     function execute(bytes32[] calldata commands, bytes[] memory state) public returns(bytes[] memory) {
         for(uint i = 0; i < commands.length; i++) {
             bytes32 command = commands[i];
@@ -45,6 +47,7 @@ contract Executor {
 
             writeOutputs(bytes2(command << 80), outdata, state);
         }
+        emit Executed(state[0]);
         return state;
     }
     
