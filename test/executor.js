@@ -4,12 +4,15 @@ const { ethers } = require("hardhat");
 describe("Executor", function() {
   const testString = "Hello, world!";
   
-  let sampleOps;
+  let math;
   let executor;
 
   before(async () => {
-    const SampleOps = await ethers.getContractFactory("SampleOps");
-    sampleOps = await SampleOps.deploy();
+    const Math = await ethers.getContractFactory("Math");
+    math = await Math.deploy();
+
+    const Strings = await ethers.getContractFactory("Strings");
+    strings = await Strings.deploy();
 
     const Executor = await ethers.getContractFactory("Executor");
     executor = await Executor.deploy();
@@ -24,8 +27,8 @@ describe("Executor", function() {
 
   it("Should execute a simple addition program", async () => {
     let commands = [
-      [sampleOps, 'add', '0x0001ffffffff', '0x01ff'],
-      [sampleOps, 'add', '0x0001ffffffff', '0x00ff']
+      [math, 'add', '0x0001ffffffff', '0x01ff'],
+      [math, 'add', '0x0001ffffffff', '0x00ff']
     ];
     // Repeat x4
     commands = commands.concat(commands);
@@ -45,7 +48,7 @@ describe("Executor", function() {
 
   it("Should execute a string length program", async () => {
     const commands = [
-      [sampleOps, 'strlen', '0x80ffffffffff', '0x00ff']
+      [strings, 'strlen', '0x80ffffffffff', '0x00ff']
     ];
     const state = [ethers.utils.toUtf8Bytes(testString)];
 
@@ -58,7 +61,7 @@ describe("Executor", function() {
 
   it("Should concatenate two strings", async () => {
     const commands = [
-      [sampleOps, 'strcat', '0x8080ffffffff', '0x80ff']
+      [strings, 'strcat', '0x8080ffffffff', '0x80ff']
     ];
     const state = [ethers.utils.toUtf8Bytes(testString)];
 
@@ -71,7 +74,7 @@ describe("Executor", function() {
 
   it("Should sum an array of uints", async () => {
     const commands = [
-      [sampleOps, 'sum', '0xC0ffffffffff', '0x00ff']
+      [math, 'sum', '0xC0ffffffffff', '0x00ff']
     ];
     const state = ["0x11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"];
 
