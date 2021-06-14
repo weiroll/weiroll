@@ -1,20 +1,5 @@
 pragma solidity ^0.8.4;
 
-/**
- * @dev Executes scripts, defined as a series of delegatecall operations.
- *      Each command is packed as [bytes4 selector, bytes6 callindexes, bytes2 returnindexes, address target].
- *      Call and return indexes specify indexes into the global 'state' array. Before calling a command, its
- *      call data is constructed by ABI-encoding the specified call indexes. The most significant bit of each
- *      index indicates if the indexed data is fixed- or variable- length. If it is fixed-length, it is inserted
- *      directly into the ABI encoding. If it is variable-length, a pointer value is written in its place and the
- *      data itself is appended to the end. Fixed-length values can be literal values such as uint, byte32, etc,
- *      while variable length values should be the 'tail' part of ABI-encoded data - for example, in the case of
- *      a uint array it would be the 32 byte length value followed by the array elements.
- *      Return values are treated likewise and unpacked into the specified slots.
- * 
- *      0xFF is reserved as an index value for both call and return data; in either case it causes nothing to be
- *      read or written for that element.
- */
 contract Executor {
     event Executed(bytes result);
 
