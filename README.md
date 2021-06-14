@@ -83,7 +83,7 @@ function concatBytes32(bytes32[] inputs) external returns(bytes);
 
 `in` needs to specify one input value of variable length (`var == 1b`), that is an array of 32-byte words (`ws == 1b`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0xc0ffffffffff`.
 
-`out` needs to specify one output value of variable length (`var == 1b`), that is an array of bytes (`ws == 0b`). The remaining output value is unneeded and should be set to `0xff`. Supposing the output value should be written to state element `, the encoded `out` data is thus `0x81ff`.
+`out` needs to specify one output value of variable length (`var == 1b`), that is an array of bytes (`ws == 0b`). The remaining output value is unneeded and should be set to `0xff`. Supposing the output value should be written to state element, the encoded `out` data is thus `0x81ff`.
 
 ## Command execution
 
