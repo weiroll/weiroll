@@ -61,8 +61,8 @@ The special value `0xff` for an argument specifier indicates that the parameter 
 
 Suppose you want to construct a command to call the following function:
 
-```
-function add(uint a, uint b) external returns(uint);
+```solidity
+function add(uint a, uint b) external returns (uint);
 ```
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
@@ -75,8 +75,8 @@ function add(uint a, uint b) external returns(uint);
 
 Suppose you want to construct a command to call the following function:
 
-```
-function concatBytes32(bytes32[] inputs) external returns(bytes);
+```solidity
+function concatBytes32(bytes32[] inputs) external returns (bytes);
 ```
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
