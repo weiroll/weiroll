@@ -1,5 +1,11 @@
 pragma solidity ^0.8.4;
 
+uint8 constant VARIABLE_LENGTH = 0x80;
+uint8 constant WORD_SIZE = 0x40;
+uint8 constant FIXED_INDEX_MASK = 0x7f;
+uint8 constant VARIABLE_INDEX_MASK = 0x3f;
+uint8 constant END_OF_ARGS = 0xff;
+
 contract Executor {
     event Executed(bytes result);
 
@@ -27,16 +33,16 @@ contract Executor {
         // Determine the length of the encoded data
         for(uint i = 0; i < 6; i++) {
             uint8 idx = uint8(indices[i]);
-            if(idx == 0xFF) break;
+            if(idx == END_OF_ARGS) break;
 
             
-            if(idx & 0x80 != 0) {
+            if(idx & VARIABLE_LENGTH != 0) {
                 // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                uint arglen = state[idx & 0x3F].length;
+                uint arglen = state[idx & VARIABLE_INDEX_MASK].length;
                 count += ((arglen + 31) / 32) * 32 + 64;
                 free += 32;
             } else {
-                require(state[idx & 0x7F].length <= 32);
+                require(state[idx & FIXED_INDEX_MASK].length <= 32);
                 count += 32;
                 free += 32;
             }
@@ -50,12 +56,12 @@ contract Executor {
         count = 0;
         for(uint i = 0; i < 6; i++) {
             uint8 idx = uint8(indices[i]);
-            if(idx == 0xFF) break;
+            if(idx == END_OF_ARGS) break;
 
-            if(idx & 0x80 != 0) {
-                uint arglen = state[idx & 0x3F].length;
+            if(idx & VARIABLE_LENGTH != 0) {
+                uint arglen = state[idx & VARIABLE_INDEX_MASK].length;
                 uint elementCount = arglen;
-                if(idx & 0x40 != 0) {
+                if(idx & WORD_SIZE != 0) {
                     elementCount /= 32;
                 }
             
@@ -64,12 +70,12 @@ contract Executor {
                     mstore(add(add(ret, 36), count), free)
                     mstore(add(add(ret, 36), free), elementCount)
                 }
-                memcpy(state[idx & 0x3f], 0, ret, free + 36, arglen);
+                memcpy(state[idx & VARIABLE_INDEX_MASK], 0, ret, free + 36, arglen);
                 free += arglen + 32;
                 count += 32;
             } else {
                 // Fixed length data; write it directly
-                bytes memory statevar = state[idx & 0x7f];
+                bytes memory statevar = state[idx & FIXED_INDEX_MASK];
                 assembly {
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
@@ -81,26 +87,26 @@ contract Executor {
     function writeOutputs(bytes2 indices, bytes memory output, bytes[] memory state) internal view {
         for(uint j = 0; j < 2; j++) {
             uint8 idx = uint8(indices[j]);
-            if(idx == 0xFF) break;
+            if(idx == END_OF_ARGS) break;
 
-            if(idx & 0x80 != 0) {
+            if(idx & VARIABLE_LENGTH != 0) {
                 uint argptr;
                 uint elementCount;
                 assembly {
                     argptr := mload(add(add(output, 32), mul(j, 32)))
                     elementCount  := mload(add(add(output, 32), argptr))
                 }
-                uint arglen = (idx & 0x40 != 0) ? elementCount * 32 : elementCount;
+                uint arglen = (idx & WORD_SIZE != 0) ? elementCount * 32 : elementCount;
                 bytes memory newstate = new bytes(arglen);
                 memcpy(output, argptr + 32, newstate, 0, arglen);
-                state[idx & 0x3f] = newstate;
+                state[idx & VARIABLE_INDEX_MASK] = newstate;
             } else {
                 // Single word
-                if(state[idx & 0x7f].length != 32) {
-                    state[idx & 0x7f] = new bytes(32);
+                if(state[idx & FIXED_INDEX_MASK].length != 32) {
+                    state[idx & FIXED_INDEX_MASK] = new bytes(32);
                 }
                 assembly {
-                    let stateptr := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                    let stateptr := mload(add(add(state, 32), mul(and(idx, FIXED_INDEX_MASK), 32)))
                     let word := mload(add(add(output, 32), mul(j, 32)))
                     mstore(add(stateptr, 32), word)
                 }
