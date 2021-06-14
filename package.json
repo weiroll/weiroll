@@ -13,6 +13,6 @@
   },
   "scripts": {
     "test": "hardhat test",
-    "prettier": "prettier --write 'contracts/**/*.sol'"
+    "format": "prettier --write 'contracts/**/*.sol'"
   }
 }
