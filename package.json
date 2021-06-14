@@ -12,6 +12,7 @@
     "solhint-plugin-prettier": "^0.0.5"
   },
   "scripts": {
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "prettier": "prettier --write 'contracts/**/*.sol'"
   }
 }
