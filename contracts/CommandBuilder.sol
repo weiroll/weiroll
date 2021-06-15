@@ -7,7 +7,6 @@ uint8 constant VARIABLE_INDEX_MASK = 0x3f;
 uint8 constant END_OF_ARGS = 0xff;
 
 library CommandBuilder {
-
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
@@ -133,6 +132,4 @@ library CommandBuilder {
             )
         }
     }
-
-
 }

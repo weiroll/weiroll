@@ -6,9 +6,9 @@ contract Strings {
     }
 
     function strcat(bytes calldata a, bytes calldata b)
-    external
-    pure
-    returns (bytes memory)
+        external
+        pure
+        returns (bytes memory)
     {
         return abi.encodePacked(a, b);
     }
