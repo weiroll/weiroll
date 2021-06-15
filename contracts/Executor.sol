@@ -3,7 +3,9 @@ pragma solidity ^0.8.4;
 import "./CommandBuilder.sol";
 
 interface RawCall {
-    function rawcall(bytes32 command, bytes[] memory state) external returns (bytes[] memory);
+    function rawcall(bytes32 command, bytes[] memory state)
+        external
+        returns (bytes[] memory);
 }
 
 contract Executor {
@@ -20,28 +22,32 @@ contract Executor {
             address target = address(uint160(uint256(command)));
             bytes4 selector = bytes4(command);
 
-            if (selector == RawCall.rawcall.selector){
-                (bool success, bytes memory outdata) =
-                    target.delegatecall(abi.encodeWithSelector(RawCall.rawcall.selector, command, state));
+            if (selector == RawCall.rawcall.selector) {
+                (bool success, bytes memory outdata) = target.delegatecall(
+                    abi.encodeWithSelector(
+                        RawCall.rawcall.selector,
+                        command,
+                        state
+                    )
+                );
                 require(success, "Rawcall failed");
 
                 state = abi.decode(outdata, (bytes[]));
-            }
-            else {
+            } else {
                 bytes memory input = state.buildInputs(
                     selector,
                     bytes6(command << 32)
                 );
 
-                (bool success, bytes memory outdata) = target.delegatecall(input);
+                (bool success, bytes memory outdata) = target.delegatecall(
+                    input
+                );
                 require(success, "Call failed");
 
                 state.writeOutputs(bytes2(command << 80), outdata);
             }
-
         }
         emit Executed(state[0]);
         return state;
     }
-
 }
