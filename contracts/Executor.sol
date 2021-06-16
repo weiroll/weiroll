@@ -36,7 +36,7 @@ contract Executor {
             } else {
                 bytes memory input = state.buildInputs(
                     selector,
-                    bytes6(command << 32)
+                    bytes7(command << 32)
                 );
 
                 (bool success, bytes memory outdata) = target.delegatecall(
@@ -44,7 +44,7 @@ contract Executor {
                 );
                 require(success, "Call failed");
 
-                state.writeOutputs(bytes2(command << 80), outdata);
+                state.writeOutputs(bytes1(command << 88), outdata);
             }
         }
         emit Executed(state[0]);
