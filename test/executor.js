@@ -6,6 +6,8 @@ describe("Executor", function() {
   
   let math;
   let executor;
+    
+  let abiCoder = ethers.utils.defaultAbiCoder
 
   before(async () => {
     const Math = await ethers.getContractFactory("Math");
@@ -14,8 +16,14 @@ describe("Executor", function() {
     const Strings = await ethers.getContractFactory("Strings");
     strings = await Strings.deploy();
 
+    const Functional = await ethers.getContractFactory("Functional");
+    functional = await Functional.deploy();
+
     const Executor = await ethers.getContractFactory("Executor");
     executor = await Executor.deploy();
+
+    const CommandBuilderHarness = await ethers.getContractFactory("CommandBuilderHarness");
+    commandbuilderharness = await CommandBuilderHarness.deploy();
   });
 
   function execute(commands, state) {
@@ -23,6 +31,13 @@ describe("Executor", function() {
       ethers.utils.concat([target.interface.getSighash(func), inargs, outargs, target.address])
     );
     return executor.execute(encodedCommands, state);
+  }
+
+  function executeHarness(commands, state) {
+    let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
+      ethers.utils.concat([target.interface.getSighash(func), inargs, outargs, target.address])
+    );
+    return commandbuilderharness.testBuildInputs(encodedCommands, state);
   }
 
   it("Should execute a simple addition program", async () => {
@@ -56,7 +71,7 @@ describe("Executor", function() {
     await expect(tx).to.emit(executor, 'Executed').withArgs("0x000000000000000000000000000000000000000000000000000000000000000d");
 
     const receipt = await tx.wait();
-    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+    console.log(`String length: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should concatenate two strings", async () => {
@@ -82,6 +97,45 @@ describe("Executor", function() {
     await expect(tx).to.emit(executor, 'Executed').withArgs('0x3333333333333333333333333333333333333333333333333333333333333333');
 
     const receipt = await tx.wait();
-    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+
+  it("Should produce an input for (uint[],address,bytes4)", async () => {
+    const commands = [
+      [functional, 'reduce', '0xC00102ffffff', '0x00ff']
+    ];
+    const ar = "0x11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222";
+    //const state = [ar, math.address, math.interface.getSighash('add')];
+    const state = [ar, String(ethers.utils.hexZeroPad(math.address, 32)), String(ethers.utils.hexZeroPad(math.interface.getSighash('add'), 32))];
+    //const state = [ethers.utils.hexlify(abiCoder.encode(["uint[]"], [[1, 2]])), math.address, math.interface.getSighash('add')];
+
+    console.log(`State built: ${state}`);
+    console.log(`Target: ${functional.address}`);
+
+    const tx = await executeHarness(commands, state);
+    
+    await expect(tx).to.emit(commandbuilderharness, 'BuiltInput').withArgs('0x3333333333333333333333333333333333333333333333333333333333333333', '0x00');
+
+    const receipt = await tx.wait();
+    console.log(`Uint reduce (add): ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should reduce a flat array of uints given a reducing target function", async () => {
+    const commands = [
+      [functional, 'reduce', '0xC00102ffffff', '0x00ff']
+    ];
+    const ar = "0x11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222";
+    //const state = [ar, math.address, math.interface.getSighash('add')];
+    const state = [ar, String(ethers.utils.hexZeroPad(math.address, 32)), String(ethers.utils.hexZeroPad(math.interface.getSighash('add'), 32))];
+    //const state = [ethers.utils.hexlify(abiCoder.encode(["uint[]"], [[1, 2]])), math.address, math.interface.getSighash('add')];
+
+    console.log(`State built: ${state}`);
+
+    const tx = await execute(commands, state);
+    await expect(tx).to.emit(executor, 'Executed').withArgs('0x3333333333333333333333333333333333333333333333333333333333333333');
+
+    const receipt = await tx.wait();
+    console.log(`Uint reduce (add): ${receipt.gasUsed.toNumber()} gas`);
   });
 });
