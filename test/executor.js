@@ -115,7 +115,7 @@ describe("Executor", function() {
 
     const tx = await executeHarness(commands, state);
     
-    await expect(tx).to.emit(commandbuilderharness, 'BuiltInput').withArgs('0x3333333333333333333333333333333333333333333333333333333333333333', '0x00');
+    await expect(tx).to.emit(commandbuilderharness, 'BuiltInput').withArgs(functional.address, '0x00');
 
     const receipt = await tx.wait();
     console.log(`Uint reduce (add): ${receipt.gasUsed.toNumber()} gas`);
