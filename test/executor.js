@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Executor", function() {
+describe("Executor", function () {
   const testString = "Hello, world!";
-  
+
   let math;
   let executor;
 
@@ -20,15 +20,20 @@ describe("Executor", function() {
 
   function execute(commands, state) {
     let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
-      ethers.utils.concat([target.interface.getSighash(func), inargs, outargs, target.address])
+      ethers.utils.concat([
+        target.interface.getSighash(func),
+        inargs,
+        outargs,
+        target.address,
+      ])
     );
     return executor.execute(encodedCommands, state);
   }
 
   it("Should execute a simple addition program", async () => {
     let commands = [
-      [math, 'add', '0x0001ffffffff', '0x01ff'],
-      [math, 'add', '0x0001ffffffff', '0x00ff']
+      [math, "add", "0x0001ffffffffff", "0x01"],
+      [math, "add", "0x0001ffffffffff", "0x00"],
     ];
     // Repeat x4
     commands = commands.concat(commands);
@@ -36,50 +41,82 @@ describe("Executor", function() {
 
     const state = [
       "0x0000000000000000000000000000000000000000000000000000000000000001",
-      "0x0000000000000000000000000000000000000000000000000000000000000001"
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
     ];
 
     const tx = await execute(commands, state);
-    await expect(tx).to.emit(executor, 'Executed').withArgs("0x0000000000000000000000000000000000000000000000000000000000000037");
+    await expect(tx)
+      .to.emit(executor, "Executed")
+      .withArgs(
+        "0x0000000000000000000000000000000000000000000000000000000000000037"
+      );
 
     const receipt = await tx.wait();
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should execute a string length program", async () => {
-    const commands = [
-      [strings, 'strlen', '0x80ffffffffff', '0x00ff']
+    const commands = [[strings, "strlen", "0x80ffffffffffff", "0x00"]];
+    const state = [
+      ethers.utils.hexDataSlice(
+        ethers.utils.defaultAbiCoder.encode(["string"], [testString]),
+        32
+      ),
     ];
-    const state = [ethers.utils.toUtf8Bytes(testString)];
 
     const tx = await execute(commands, state);
-    await expect(tx).to.emit(executor, 'Executed').withArgs("0x000000000000000000000000000000000000000000000000000000000000000d");
+    await expect(tx)
+      .to.emit(executor, "Executed")
+      .withArgs(
+        "0x000000000000000000000000000000000000000000000000000000000000000d"
+      );
 
     const receipt = await tx.wait();
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should concatenate two strings", async () => {
-    const commands = [
-      [strings, 'strcat', '0x8080ffffffff', '0x80ff']
+    const commands = [[strings, "strcat", "0x8080ffffffffff", "0x80"]];
+    const state = [
+      ethers.utils.hexDataSlice(
+        ethers.utils.defaultAbiCoder.encode(["string"], [testString]),
+        32
+      ),
     ];
-    const state = [ethers.utils.toUtf8Bytes(testString)];
 
     const tx = await execute(commands, state);
-    await expect(tx).to.emit(executor, 'Executed').withArgs(ethers.utils.hexlify(ethers.utils.toUtf8Bytes(testString + testString)));
+    await expect(tx)
+      .to.emit(executor, "Executed")
+      .withArgs(
+        ethers.utils.hexDataSlice(
+          ethers.utils.defaultAbiCoder.encode(
+            ["string"],
+            [testString + testString]
+          ),
+          32
+        )
+      );
 
     const receipt = await tx.wait();
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should sum an array of uints", async () => {
-    const commands = [
-      [math, 'sum', '0xC0ffffffffff', '0x00ff']
+    const commands = [[math, "sum", "0x80ffffffffffff", "0x00"]];
+    const state = [
+      ethers.utils.hexConcat([
+        "0x0000000000000000000000000000000000000000000000000000000000000002",
+        "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "0x2222222222222222222222222222222222222222222222222222222222222222",
+      ]),
     ];
-    const state = ["0x11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"];
 
     const tx = await execute(commands, state);
-    await expect(tx).to.emit(executor, 'Executed').withArgs('0x3333333333333333333333333333333333333333333333333333333333333333');
+    await expect(tx)
+      .to.emit(executor, "Executed")
+      .withArgs(
+        "0x3333333333333333333333333333333333333333333333333333333333333333"
+      );
 
     const receipt = await tx.wait();
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);

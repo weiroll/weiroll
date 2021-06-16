@@ -1,32 +1,31 @@
 pragma solidity ^0.8.4;
 
 uint8 constant VARIABLE_LENGTH = 0x80;
-uint8 constant WORD_SIZE = 0x40;
-uint8 constant FIXED_INDEX_MASK = 0x7f;
-uint8 constant VARIABLE_INDEX_MASK = 0x3f;
+uint8 constant INDEX_MASK = 0x7f;
 uint8 constant END_OF_ARGS = 0xff;
 
 library CommandBuilder {
+
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
-        bytes6 indices
+        bytes7 indices
     ) internal view returns (bytes memory ret) {
         uint256 count = 0; // Number of bytes in whole ABI encoded message
         uint256 free = 0; // Pointer to first free byte in tail part of message
 
         // Determine the length of the encoded data
-        for (uint256 i = 0; i < 6; i++) {
+        for (uint256 i = 0; i < 7; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
             if (idx & VARIABLE_LENGTH != 0) {
                 // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                uint256 arglen = state[idx & VARIABLE_INDEX_MASK].length;
-                count += ((arglen + 31) / 32) * 32 + 64;
+                uint256 arglen = state[idx & INDEX_MASK].length;
+                count += ((arglen + 31) / 32) * 32 + 32;
                 free += 32;
             } else {
-                require(state[idx & FIXED_INDEX_MASK].length <= 32);
+                require(state[idx & INDEX_MASK].length == 32);
                 count += 32;
                 free += 32;
             }
@@ -38,34 +37,29 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i = 0; i < 6; i++) {
+        for (uint256 i = 0; i < 7; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
             if (idx & VARIABLE_LENGTH != 0) {
-                uint256 arglen = state[idx & VARIABLE_INDEX_MASK].length;
-                uint256 elementCount = arglen;
-                if (idx & WORD_SIZE != 0) {
-                    elementCount /= 32;
-                }
+                uint256 arglen = state[idx & INDEX_MASK].length;
 
                 // Variable length data; put a pointer in the slot and write the data at the end
                 assembly {
                     mstore(add(add(ret, 36), count), free)
-                    mstore(add(add(ret, 36), free), elementCount)
                 }
                 memcpy(
-                    state[idx & VARIABLE_INDEX_MASK],
+                    state[idx & INDEX_MASK],
                     0,
                     ret,
-                    free + 36,
+                    free + 4,
                     arglen
                 );
-                free += arglen + 32;
+                free += arglen;
                 count += 32;
             } else {
                 // Fixed length data; write it directly
-                bytes memory statevar = state[idx & FIXED_INDEX_MASK];
+                bytes memory statevar = state[idx & INDEX_MASK];
                 assembly {
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
@@ -76,38 +70,36 @@ library CommandBuilder {
 
     function writeOutputs(
         bytes[] memory state,
-        bytes2 indices,
+        bytes1 index,
         bytes memory output
     ) internal view {
-        for (uint256 j = 0; j < 2; j++) {
-            uint8 idx = uint8(indices[j]);
-            if (idx == END_OF_ARGS) break;
+        uint8 idx = uint8(index);
+        if (idx == END_OF_ARGS) return;
 
-            if (idx & VARIABLE_LENGTH != 0) {
-                uint256 argptr;
-                uint256 elementCount;
-                assembly {
-                    argptr := mload(add(add(output, 32), mul(j, 32)))
-                    elementCount := mload(add(add(output, 32), argptr))
-                }
-                uint256 arglen = (idx & WORD_SIZE != 0)
-                    ? elementCount * 32
-                    : elementCount;
-                bytes memory newstate = new bytes(arglen);
-                memcpy(output, argptr + 32, newstate, 0, arglen);
-                state[idx & VARIABLE_INDEX_MASK] = newstate;
-            } else {
-                // Single word
-                if (state[idx & FIXED_INDEX_MASK].length != 32) {
-                    state[idx & FIXED_INDEX_MASK] = new bytes(32);
-                }
-                assembly {
-                    let stateptr := mload(
-                        add(add(state, 32), mul(and(idx, FIXED_INDEX_MASK), 32))
-                    )
-                    let word := mload(add(add(output, 32), mul(j, 32)))
-                    mstore(add(stateptr, 32), word)
-                }
+        if (idx & VARIABLE_LENGTH != 0) {
+            // Check the first field is 0x20 (because we have only a single return value)
+            // And copy the rest into state.
+            uint256 argptr;
+            assembly {
+                argptr := mload(add(output, 32))
+            }
+            require(argptr == 32, "Only one return value permitted");
+            bytes memory newstate = new bytes(output.length - 32);
+            memcpy(output, 32, newstate, 0, newstate.length);
+            state[idx & INDEX_MASK] = newstate;
+        } else {
+            // Single word
+            require(output.length == 32, "Only one return value permitted");
+
+            if (state[idx & INDEX_MASK].length != 32) {
+                state[idx & INDEX_MASK] = new bytes(32);
+            }
+            assembly {
+                let stateptr := mload(
+                    add(add(state, 32), mul(and(idx, INDEX_MASK), 32))
+                )
+                let word := mload(add(output, 32))
+                mstore(add(stateptr, 32), word)
             }
         }
     }
