@@ -6,9 +6,7 @@ contract Functional {
         address target,
         bytes4 selector
     ) external returns (uint256) {
-        uint256 sum = 100;
-
-        return sum;
+        uint256 sum = 0;
 
         if (nums.length == 0) {
             return 0;
