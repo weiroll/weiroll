@@ -3,19 +3,17 @@ pragma solidity ^0.8.4;
 import "./CommandBuilder.sol";
 
 interface RawCall {
-    function rawcall(bytes32 command, bytes[] memory state)
+    function rawcall(bytes32 command, bytes32[] calldata staticState, bytes[] memory dynamicState)
         external
-        returns (bytes[] memory);
+        returns (bytes32[] memory, bytes[] memory);
 }
 
 contract Executor {
-    event Executed(bytes result);
+    event Executed(bytes32 staticResult, bytes dynamicResult);
 
-    using CommandBuilder for bytes[];
-
-    function execute(bytes32[] calldata commands, bytes[] memory state)
+    function execute(bytes32[] calldata commands, bytes32[] memory staticState, bytes[] memory dynamicState)
         public
-        returns (bytes[] memory)
+        returns (bytes32[] memory, bytes[] memory)
     {
         for (uint256 i = 0; i < commands.length; i++) {
             bytes32 command = commands[i];
@@ -27,14 +25,17 @@ contract Executor {
                     abi.encodeWithSelector(
                         RawCall.rawcall.selector,
                         command,
-                        state
+                        staticState,
+                        dynamicState
                     )
                 );
                 require(success, "Rawcall failed");
 
-                state = abi.decode(outdata, (bytes[]));
+                (staticState, dynamicState) = abi.decode(outdata, (bytes32[], bytes[]));
             } else {
-                bytes memory input = state.buildInputs(
+                bytes memory input = CommandBuilder.buildInputs(
+                    staticState,
+                    dynamicState,
                     selector,
                     bytes7(command << 32)
                 );
@@ -44,10 +45,10 @@ contract Executor {
                 );
                 require(success, "Call failed");
 
-                state.writeOutputs(bytes1(command << 88), outdata);
+                CommandBuilder.writeOutput(staticState, dynamicState, bytes1(command << 88), outdata);
             }
         }
-        emit Executed(state[0]);
-        return state;
+        emit Executed(staticState.length == 0 ? bytes32(0) : staticState[0], dynamicState.length == 0 ? bytes("") : dynamicState[0]);
+        return (staticState, dynamicState);
     }
 }

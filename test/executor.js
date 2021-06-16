@@ -1,6 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+const BYTES32_ZERO = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
 describe("Executor", function () {
   const testString = "Hello, world!";
 
@@ -18,7 +20,7 @@ describe("Executor", function () {
     executor = await Executor.deploy();
   });
 
-  function execute(commands, state) {
+  function execute(commands, staticState, dynamicState) {
     let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
       ethers.utils.concat([
         target.interface.getSighash(func),
@@ -27,7 +29,7 @@ describe("Executor", function () {
         target.address,
       ])
     );
-    return executor.execute(encodedCommands, state);
+    return executor.execute(encodedCommands, staticState, dynamicState);
   }
 
   it("Should execute a simple addition program", async () => {
@@ -44,11 +46,12 @@ describe("Executor", function () {
       "0x0000000000000000000000000000000000000000000000000000000000000001",
     ];
 
-    const tx = await execute(commands, state);
+    const tx = await execute(commands, state, []);
     await expect(tx)
       .to.emit(executor, "Executed")
       .withArgs(
-        "0x0000000000000000000000000000000000000000000000000000000000000037"
+        "0x0000000000000000000000000000000000000000000000000000000000000037",
+        "0x"
       );
 
     const receipt = await tx.wait();
@@ -64,11 +67,12 @@ describe("Executor", function () {
       ),
     ];
 
-    const tx = await execute(commands, state);
+    const tx = await execute(commands, [BYTES32_ZERO], state);
     await expect(tx)
       .to.emit(executor, "Executed")
       .withArgs(
-        "0x000000000000000000000000000000000000000000000000000000000000000d"
+        "0x000000000000000000000000000000000000000000000000000000000000000d",
+        state[0]
       );
 
     const receipt = await tx.wait();
@@ -84,10 +88,11 @@ describe("Executor", function () {
       ),
     ];
 
-    const tx = await execute(commands, state);
+    const tx = await execute(commands, [], state);
     await expect(tx)
       .to.emit(executor, "Executed")
       .withArgs(
+        BYTES32_ZERO,
         ethers.utils.hexDataSlice(
           ethers.utils.defaultAbiCoder.encode(
             ["string"],
@@ -111,11 +116,12 @@ describe("Executor", function () {
       ]),
     ];
 
-    const tx = await execute(commands, state);
+    const tx = await execute(commands, [BYTES32_ZERO], state);
     await expect(tx)
       .to.emit(executor, "Executed")
       .withArgs(
-        "0x3333333333333333333333333333333333333333333333333333333333333333"
+        "0x3333333333333333333333333333333333333333333333333333333333333333",
+        state[0]
       );
 
     const receipt = await tx.wait();

@@ -7,7 +7,8 @@ uint8 constant END_OF_ARGS = 0xff;
 library CommandBuilder {
 
     function buildInputs(
-        bytes[] memory state,
+        bytes32[] memory staticState,
+        bytes[] memory dynamicState,
         bytes4 selector,
         bytes7 indices
     ) internal view returns (bytes memory ret) {
@@ -21,11 +22,10 @@ library CommandBuilder {
 
             if (idx & VARIABLE_LENGTH != 0) {
                 // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                uint256 arglen = state[idx & INDEX_MASK].length;
+                uint256 arglen = dynamicState[idx & INDEX_MASK].length;
                 count += ((arglen + 31) / 32) * 32 + 32;
                 free += 32;
             } else {
-                require(state[idx & INDEX_MASK].length == 32);
                 count += 32;
                 free += 32;
             }
@@ -42,14 +42,14 @@ library CommandBuilder {
             if (idx == END_OF_ARGS) break;
 
             if (idx & VARIABLE_LENGTH != 0) {
-                uint256 arglen = state[idx & INDEX_MASK].length;
+                uint256 arglen = dynamicState[idx & INDEX_MASK].length;
 
                 // Variable length data; put a pointer in the slot and write the data at the end
                 assembly {
                     mstore(add(add(ret, 36), count), free)
                 }
                 memcpy(
-                    state[idx & INDEX_MASK],
+                    dynamicState[idx & INDEX_MASK],
                     0,
                     ret,
                     free + 4,
@@ -59,17 +59,18 @@ library CommandBuilder {
                 count += 32;
             } else {
                 // Fixed length data; write it directly
-                bytes memory statevar = state[idx & INDEX_MASK];
+                bytes32 statevar = staticState[idx & INDEX_MASK];
                 assembly {
-                    mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    mstore(add(add(ret, 36), count), statevar)
                 }
                 count += 32;
             }
         }
     }
 
-    function writeOutputs(
-        bytes[] memory state,
+    function writeOutput(
+        bytes32[] memory staticState,
+        bytes[] memory dynamicState,
         bytes1 index,
         bytes memory output
     ) internal view {
@@ -86,21 +87,16 @@ library CommandBuilder {
             require(argptr == 32, "Only one return value permitted");
             bytes memory newstate = new bytes(output.length - 32);
             memcpy(output, 32, newstate, 0, newstate.length);
-            state[idx & INDEX_MASK] = newstate;
+            dynamicState[idx & INDEX_MASK] = newstate;
         } else {
             // Single word
             require(output.length == 32, "Only one return value permitted");
 
-            if (state[idx & INDEX_MASK].length != 32) {
-                state[idx & INDEX_MASK] = new bytes(32);
-            }
+            bytes32 statevalue;
             assembly {
-                let stateptr := mload(
-                    add(add(state, 32), mul(and(idx, INDEX_MASK), 32))
-                )
-                let word := mload(add(output, 32))
-                mstore(add(stateptr, 32), word)
+                statevalue := mload(add(output, 32))
             }
+            staticState[idx & INDEX_MASK] = statevalue;
         }
     }
 
