@@ -30,6 +30,7 @@ describe("Executor", function() {
     let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
       ethers.utils.concat([target.interface.getSighash(func), inargs, outargs, target.address])
     );
+    console.log([encodedCommands.map((x) => ethers.utils.hexlify(x)), state])
     return executor.execute(encodedCommands, state);
   }
 
@@ -117,27 +118,40 @@ describe("Executor", function() {
     console.log(`State built: ${state}`);
     console.log(`Target: ${functional.address}`);
 
+    const expected = ethers.utils.hexConcat([
+      functional.interface.getSighash('reduce'),
+      ethers.utils.defaultAbiCoder.encode(['uint[]', 'address', 'bytes4'], [ar, math.address, math.interface.getSighash('add')])
+    ]);
+
     const tx = await executeHarness(commands, state);
     
     await expect(tx).to.emit(commandbuilderharness, 'BuiltInput').withArgs(
       functional.address,
-      ethers.utils.hexConcat([
-        functional.interface.getSighash('reduce'),
-        ethers.utils.defaultAbiCoder.encode(['uint[]', 'address', 'bytes4'], [ar, math.address, math.interface.getSighash('add')])
-      ])
+      expected
     );
 
     const receipt = await tx.wait();
     console.log(`Uint reduce (add): ${receipt.gasUsed.toNumber()} gas`);
+
+    const tx2 = await (await ethers.getSigners())[0].sendTransaction({
+      to: functional.address,
+      data: expected
+    })
+    const receipt2 = await tx2.wait();
+    console.log(receipt2);
   });
 
   it("Should reduce a flat array of uints given a reducing target function", async () => {
     const commands = [
       [functional, 'reduce', '0xC00102ffffff', '0x00ff']
     ];
-    const ar = "0x11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222";
+    const ar = ["0x1111111111111111111111111111111111111111111111111111111111111111", "0x2222222222222222222222222222222222222222222222222222222222222222"];
     //const state = [ar, math.address, math.interface.getSighash('add')];
-    const state = [ar, String(ethers.utils.hexZeroPad(math.address, 32)), String(ethers.utils.hexZeroPad(math.interface.getSighash('add'), 32))];
+    const state = [
+      ethers.utils.hexConcat(ar),
+      String(ethers.utils.hexZeroPad(math.address, 32)),
+      String(ethers.utils.hexConcat([math.interface.getSighash('add'), '0x00000000000000000000000000000000000000000000000000000000']))
+    ];
     //const state = [ethers.utils.hexlify(abiCoder.encode(["uint[]"], [[1, 2]])), math.address, math.interface.getSighash('add')];
 
     console.log(`State built: ${state}`);
