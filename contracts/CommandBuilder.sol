@@ -96,19 +96,21 @@ library CommandBuilder {
         uint8 idx = uint8(index);
         if (idx == END_OF_ARGS) return state;
 
-        if (idx == USE_STATE) {
-            state = abi.decode(output, (bytes[]));
-        } else if (idx & VARIABLE_LENGTH != 0) {
-            // Check the first field is 0x20 (because we have only a single return value)
-            // And copy the rest into state.
-            uint256 argptr;
-            assembly {
-                argptr := mload(add(output, 32))
+        if (idx & VARIABLE_LENGTH != 0) {
+            if (idx == USE_STATE) {
+                state = abi.decode(output, (bytes[]));
+            } else {
+                // Check the first field is 0x20 (because we have only a single return value)
+                // And copy the rest into state.
+                uint256 argptr;
+                assembly {
+                    argptr := mload(add(output, 32))
+                }
+                require(argptr == 32, "Only one return value permitted");
+                bytes memory newstate = new bytes(output.length - 32);
+                memcpy(output, 32, newstate, 0, newstate.length);
+                state[idx & INDEX_MASK] = newstate;
             }
-            require(argptr == 32, "Only one return value permitted");
-            bytes memory newstate = new bytes(output.length - 32);
-            memcpy(output, 32, newstate, 0, newstate.length);
-            state[idx & INDEX_MASK] = newstate;
         } else {
             // Single word
             require(output.length == 32, "Only one return value permitted");
