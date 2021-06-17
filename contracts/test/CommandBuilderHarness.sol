@@ -5,26 +5,25 @@ import "../CommandBuilder.sol";
 contract CommandBuilderHarness {
     using CommandBuilder for bytes[];
 
-    event BuiltInput(bytes input);
     event BuiltOutput(bytes[] state, bytes output);
 
     function testBuildInputs(
         bytes[] memory state,
         bytes4 selector,
         bytes7 indices
-    ) public {
+    ) public view returns (bytes memory){
         bytes memory input = state.buildInputs(selector, indices);
 
-        emit BuiltInput(input);
+        return input;
     }
 
     function testWriteOutputs(
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) public {
+    ) public view returns (bytes[] memory, bytes memory) {
         state = state.writeOutputs(index, output);
 
-        emit BuiltOutput(state, output);
+        return (state, output);
     }
 }

@@ -24,15 +24,12 @@ describe("CommandBuilderHarness", function () {
 
   async function executeBuildInputs(commands, state, abiout, msg){
     for (let c of commands) {
-        selector = c.slice(0, 10);
-        indices = "0x" + c.slice(10, 10+7*2);
-        target = "0x" + c.slice(10+7*2);
+        selector = ethers.utils.hexDataSlice(c, 0, 4);
+        indices = ethers.utils.hexDataSlice(c, 4, 4+7);
+        target = ethers.utils.hexDataSlice(c, 4+7);
         const tx = await cbh.testBuildInputs(state, selector, indices);
-        await expect(tx)
-          .to.emit(cbh, "BuiltInput")
-          .withArgs(selector + abiout.slice(2));
-        const receipt = await tx.wait();
-        console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
+        expect(tx).to.equal(selector + abiout.slice(2));
+        // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
     }
   }
 
@@ -43,7 +40,6 @@ describe("CommandBuilderHarness", function () {
 
     abiout = abi.encode(math.interface.getFunction("add").inputs, args);
 
-    planner.addCommand(math.add.apply(this, args));
     planner.addCommand(math.add.apply(this, args));
 
     const {commands, state} = planner.plan();
@@ -101,12 +97,7 @@ describe("CommandBuilderHarness", function () {
 
     state[0] = output;
 
-    await expect(tx)
-      .to.emit(cbh, "BuiltOutput")
-      .withArgs(state, output);
-    const receipt = await tx.wait();
-    console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
-
+    expect(tx).to.deep.equal([state, output]);
   });
 
   it("Should select and overwrite second dynamic amount bytes in second state slot given a uint[] output (dynamic test)", async () => {
@@ -123,14 +114,9 @@ describe("CommandBuilderHarness", function () {
 
     const tx = await cbh.testWriteOutputs(state, index, output);
 
-    state[1] = "0x" + output.slice(64+2);
+    state[1] = ethers.utils.hexDataSlice(output, 32);
 
-    await expect(tx)
-      .to.emit(cbh, "BuiltOutput")
-      .withArgs(state, output);
-    const receipt = await tx.wait();
-    console.log(`buildOutputs for 64 dynamic state: ${receipt.gasUsed.toNumber()} gas`);
-
+    expect(tx).to.deep.equal([state, output]);
   });
 
 
@@ -150,12 +136,7 @@ describe("CommandBuilderHarness", function () {
 
     const tx = await cbh.testWriteOutputs(state, index, output);
 
-    await expect(tx)
-      .to.emit(cbh, "BuiltOutput")
-      .withArgs(precoded, output);
-    const receipt = await tx.wait();
-    console.log(`buildOutputs for 3-element bytes[] rawcall state: ${receipt.gasUsed.toNumber()} gas`);
-
+    expect(tx).to.deep.equal([precoded, output]);
   });
 
 });
