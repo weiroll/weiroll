@@ -6,7 +6,6 @@ uint8 constant END_OF_ARGS = 0xff;
 uint8 constant USE_STATE = 0xfe;
 
 library CommandBuilder {
-
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
@@ -23,20 +22,26 @@ library CommandBuilder {
 
             if (idx & VARIABLE_LENGTH != 0) {
                 if (idx == USE_STATE) {
-                    if(stateData.length == 0) {
+                    if (stateData.length == 0) {
                         stateData = abi.encode(state);
                     }
                     count += stateData.length;
                     free += 32;
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                    uint arglen = state[idx & INDEX_MASK].length;
-                    require(arglen % 32 == 0, "Dynamic state variables must be a multiple of 32 bytes");
+                    uint256 arglen = state[idx & INDEX_MASK].length;
+                    require(
+                        arglen % 32 == 0,
+                        "Dynamic state variables must be a multiple of 32 bytes"
+                    );
                     count += arglen + 32;
                     free += 32;
                 }
             } else {
-                require(state[idx & INDEX_MASK].length == 32, "Static state variables must be 32 bytes");
+                require(
+                    state[idx & INDEX_MASK].length == 32,
+                    "Static state variables must be 32 bytes"
+                );
                 count += 32;
                 free += 32;
             }
@@ -67,13 +72,7 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(
-                        state[idx & INDEX_MASK],
-                        0,
-                        ret,
-                        free + 4,
-                        arglen
-                    );
+                    memcpy(state[idx & INDEX_MASK], 0, ret, free + 4, arglen);
                     free += arglen;
                     count += 32;
                 }
@@ -92,7 +91,7 @@ library CommandBuilder {
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) internal view returns(bytes[] memory) {
+    ) internal view returns (bytes[] memory) {
         uint8 idx = uint8(index);
         if (idx == END_OF_ARGS) return state;
 
