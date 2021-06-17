@@ -48,8 +48,6 @@ describe("CommandBuilderHarness", function () {
 
     const {commands, state} = planner.plan();
 
-    console.log(commands, state);
-
     await executeBuildInputs(commands, state, abiout, "Math.add");
   });
 
