@@ -55,11 +55,10 @@ describe("CommandBuilderHarness", function () {
     const planner = new weiroll.Planner();
 
     let args = ["Hello", " World!"];
-    let argsEncodable = args.map((s) => ethers.utils.toUtf8Bytes(s))
 
-    abiout = abi.encode(strings.interface.getFunction("strcat").inputs, argsEncodable);
+    abiout = abi.encode(strings.interface.getFunction("strcat").inputs, args);
 
-    planner.addCommand(strings.strcat.apply(this, argsEncodable));
+    planner.addCommand(strings.strcat.apply(this, args));
 
     const {commands, state} = planner.plan();
 
