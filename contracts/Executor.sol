@@ -19,9 +19,7 @@ contract Executor {
                 bytes7(command << 32)
             );
 
-            (bool success, bytes memory outdata) = target.delegatecall(
-                input
-            );
+            (bool success, bytes memory outdata) = target.delegatecall(input);
             require(success, "Call failed");
 
             state = state.writeOutputs(bytes1(command << 88), outdata);
