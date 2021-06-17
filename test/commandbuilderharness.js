@@ -53,7 +53,7 @@ describe("CommandBuilderHarness", function () {
     await executeBuildInputs(commands, state, abiout, "Math.add");
   });
 
-  it("Should concatenate two strings", async () => {
+  it("Should build inputs that match Strings.strcat ABI", async () => {
     const planner = new weiroll.Planner();
 
     let args = ["Hello", " World!"];
@@ -85,6 +85,32 @@ describe("CommandBuilderHarness", function () {
     const {commands, state} = planner.plan();
 
     await executeBuildInputs(commands, state, abiout, "Math.sum");
+
+  });
+
+  it("Should select first 32 bytes in state for output (static test)", async () => {
+
+    let state = [
+      "0x000000000000000000000000000000000000000000000000000000000000000a",
+      "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "0x2222222222222222222222222222222222222222222222222222222222222222"
+    ];
+    
+    let index = "0x00";
+
+    let output = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    // abiout = abi.encode(cbh.interface.getFunction("testWriteOutputs").inputs, [state, index, output]);
+
+    const tx = await cbh.testWriteOutputs(state, index, output);
+
+    state[0] = output;
+
+    await expect(tx)
+      .to.emit(cbh, "BuiltOutput")
+      .withArgs(state, state[0]);
+    const receipt = await tx.wait();
+    console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
 
   });
 
