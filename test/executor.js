@@ -6,6 +6,7 @@ describe("Executor", function () {
 
   let math;
   let executor;
+  let stateTest;
 
   before(async () => {
     const Math = await ethers.getContractFactory("Math");
@@ -13,6 +14,9 @@ describe("Executor", function () {
 
     const Strings = await ethers.getContractFactory("Strings");
     strings = await Strings.deploy();
+
+    const StateTest = await ethers.getContractFactory("StateTest");
+    stateTest = await StateTest.deploy();
 
     const Executor = await ethers.getContractFactory("Executor");
     executor = await Executor.deploy();
@@ -120,5 +124,29 @@ describe("Executor", function () {
 
     const receipt = await tx.wait();
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should pass and return raw state to functions", async () => {
+    const commands = [[stateTest, "addSlots", "0x000102feffffff", "0xfe"]];
+    const state = [
+      // dest slot index
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      // src1 slot index
+      "0x0000000000000000000000000000000000000000000000000000000000000003",
+      // src2 slot index
+      "0x0000000000000000000000000000000000000000000000000000000000000004",
+      // src1
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
+      // src2
+      "0x0000000000000000000000000000000000000000000000000000000000000002"
+    ];
+
+    const tx = await execute(commands, state);
+    await expect(tx)
+      .to.emit(executor, "Executed")
+      .withArgs("0x0000000000000000000000000000000000000000000000000000000000000003");
+
+    const receipt = await tx.wait();
+    console.log(`State passing: ${receipt.gasUsed.toNumber()} gas`);
   });
 });
