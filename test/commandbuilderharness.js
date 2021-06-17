@@ -132,7 +132,7 @@ describe("CommandBuilderHarness", function () {
       .to.emit(cbh, "BuiltOutput")
       .withArgs(state, output);
     const receipt = await tx.wait();
-    console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
+    console.log(`buildOutputs for 64 dynamic state: ${receipt.gasUsed.toNumber()} gas`);
 
   });
 
@@ -157,7 +157,7 @@ describe("CommandBuilderHarness", function () {
       .to.emit(cbh, "BuiltOutput")
       .withArgs(precoded, output);
     const receipt = await tx.wait();
-    console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
+    console.log(`buildOutputs for 3-element bytes[] rawcall state: ${receipt.gasUsed.toNumber()} gas`);
 
   });
 
