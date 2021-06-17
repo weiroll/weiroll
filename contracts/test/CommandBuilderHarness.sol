@@ -5,8 +5,6 @@ import "../CommandBuilder.sol";
 contract CommandBuilderHarness {
     using CommandBuilder for bytes[];
 
-    event BuiltOutput(bytes[] state, bytes output);
-
     function testBuildInputs(
         bytes[] memory state,
         bytes4 selector,
