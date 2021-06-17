@@ -21,18 +21,20 @@ library CommandBuilder {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
-            if (idx == USE_STATE) {
-                if(stateData.length == 0) {
-                    stateData = abi.encode(state);
+            if (idx & VARIABLE_LENGTH != 0) {
+                if (idx == USE_STATE) {
+                    if(stateData.length == 0) {
+                        stateData = abi.encode(state);
+                    }
+                    count += stateData.length;
+                    free += 32;
+                } else {
+                    // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
+                    uint arglen = state[idx & INDEX_MASK].length;
+                    require(arglen % 32 == 0, "Dynamic state variables must be a multiple of 32 bytes");
+                    count += arglen + 32;
+                    free += 32;
                 }
-                count += stateData.length;
-                free += 32;
-            } else if (idx & VARIABLE_LENGTH != 0) {
-                // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                uint arglen = state[idx & INDEX_MASK].length;
-                require(arglen % 32 == 0, "Dynamic state variables must be a multiple of 32 bytes");
-                count += arglen + 32;
-                free += 32;
             } else {
                 require(state[idx & INDEX_MASK].length == 32, "Static state variables must be 32 bytes");
                 count += 32;
@@ -50,29 +52,31 @@ library CommandBuilder {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
-            if (idx == USE_STATE) {
-                assembly {
-                    mstore(add(add(ret, 36), count), free)
-                }
-                memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
-                free += stateData.length - 32;
-                count += 32;
-            } else if (idx & VARIABLE_LENGTH != 0) {
-                uint256 arglen = state[idx & INDEX_MASK].length;
+            if (idx & VARIABLE_LENGTH != 0) {
+                if (idx == USE_STATE) {
+                    assembly {
+                        mstore(add(add(ret, 36), count), free)
+                    }
+                    memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
+                    free += stateData.length - 32;
+                    count += 32;
+                } else {
+                    uint256 arglen = state[idx & INDEX_MASK].length;
 
-                // Variable length data; put a pointer in the slot and write the data at the end
-                assembly {
-                    mstore(add(add(ret, 36), count), free)
+                    // Variable length data; put a pointer in the slot and write the data at the end
+                    assembly {
+                        mstore(add(add(ret, 36), count), free)
+                    }
+                    memcpy(
+                        state[idx & INDEX_MASK],
+                        0,
+                        ret,
+                        free + 4,
+                        arglen
+                    );
+                    free += arglen;
+                    count += 32;
                 }
-                memcpy(
-                    state[idx & INDEX_MASK],
-                    0,
-                    ret,
-                    free + 4,
-                    arglen
-                );
-                free += arglen;
-                count += 32;
             } else {
                 // Fixed length data; write it directly
                 bytes memory statevar = state[idx & INDEX_MASK];
