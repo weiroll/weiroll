@@ -88,7 +88,7 @@ describe("CommandBuilderHarness", function () {
 
   });
 
-  it("Should select first 32 bytes in state for output (static test)", async () => {
+  it("Should select and overwrite first 32 bytes in state for output (static test)", async () => {
 
     let state = [
       "0x000000000000000000000000000000000000000000000000000000000000000a",
@@ -108,7 +108,59 @@ describe("CommandBuilderHarness", function () {
 
     await expect(tx)
       .to.emit(cbh, "BuiltOutput")
-      .withArgs(state, state[0]);
+      .withArgs(state, output);
+    const receipt = await tx.wait();
+    console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
+
+  });
+
+  it("Should select and overwrite first dynamic amount bytes in second state slot given a uint[] output (dynamic test)", async () => {
+
+    let state = [
+      "0x000000000000000000000000000000000000000000000000000000000000000a",
+      "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "0x2222222222222222222222222222222222222222222222222222222222222222"
+    ];
+    
+    let index = "0x81";
+    
+    let output = abi.encode(["uint[]"], [[1, 2, 3]]);
+
+    console.log(output);
+    // abiout = abi.encode(cbh.interface.getFunction("testWriteOutputs").inputs, [state, index, output]);
+
+    const tx = await cbh.testWriteOutputs(state, index, output);
+
+    state[1] = "0x" + output.slice(64+2);
+
+    await expect(tx)
+      .to.emit(cbh, "BuiltOutput")
+      .withArgs(state, output);
+    const receipt = await tx.wait();
+    console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
+
+  });
+
+
+  it("Should overwrite entire state with output value (rawcall)", async () => {
+
+    let state = [
+      "0x000000000000000000000000000000000000000000000000000000000000000a",
+      "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "0x2222222222222222222222222222222222222222222222222222222222222222"
+    ];
+    
+    let index = "0xfe";
+
+    let output = "0x1000000000000000000000000000000000000000000000000000000000000000";
+
+    // abiout = abi.encode(cbh.interface.getFunction("testWriteOutputs").inputs, [state, index, output]);
+
+    const tx = await cbh.testWriteOutputs(state, index, output);
+
+    await expect(tx)
+      .to.emit(cbh, "BuiltOutput")
+      .withArgs(output, output);
     const receipt = await tx.wait();
     console.log(`buildOutputs for 32byte static state: ${receipt.gasUsed.toNumber()} gas`);
 

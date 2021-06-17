@@ -23,7 +23,7 @@ contract CommandBuilderHarness {
         bytes1 index,
         bytes memory output
     ) public {
-        state.writeOutputs(index, output);
+        state = state.writeOutputs(index, output);
 
         emit BuiltOutput(state, output);
     }
