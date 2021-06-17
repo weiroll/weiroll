@@ -9,7 +9,7 @@ contract CommandBuilderHarness {
         bytes[] memory state,
         bytes4 selector,
         bytes7 indices
-    ) public view returns (bytes memory){
+    ) public view returns (bytes memory) {
         bytes memory input = state.buildInputs(selector, indices);
 
         return input;

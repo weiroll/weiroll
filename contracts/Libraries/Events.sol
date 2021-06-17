@@ -4,8 +4,8 @@ contract Events {
     event LogBytes(bytes message);
     event LogString(string message);
     event LogBytes32(bytes32 message);
-    event LogUint(uint message);
-    
+    event LogUint(uint256 message);
+
     function logBytes(bytes calldata message) public {
         emit LogBytes(message);
     }
@@ -18,7 +18,7 @@ contract Events {
         emit LogBytes32(message);
     }
 
-    function logUint(uint message) public {
+    function logUint(uint256 message) public {
         emit LogUint(message);
     }
 }
