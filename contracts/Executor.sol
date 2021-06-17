@@ -3,8 +3,6 @@ pragma solidity ^0.8.4;
 import "./CommandBuilder.sol";
 
 contract Executor {
-    event Executed(bytes result);
-
     using CommandBuilder for bytes[];
 
     function execute(bytes32[] calldata commands, bytes[] memory state)
@@ -28,7 +26,6 @@ contract Executor {
 
             state = state.writeOutputs(bytes1(command << 88), outdata);
         }
-        emit Executed(state[0]);
         return state;
     }
 }
