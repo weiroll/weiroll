@@ -106,30 +106,30 @@ library CommandBuilder {
                     argptr := mload(add(output, 32))
                 }
                 require(argptr == 32, "Only one return value permitted");
-                bytes memory stateEntry = state[idx & INDEX_MASK];
+                bytes memory entry = state[idx & INDEX_MASK];
                 // Only allocate new memory if we have to
-                if(stateEntry.length < output.length - 32) {
-                    stateEntry = state[idx & INDEX_MASK] = new bytes(output.length - 32);
+                if(entry.length < output.length - 32) {
+                    entry = state[idx & INDEX_MASK] = new bytes(output.length - 32);
                 }
                 assembly {
                     // Set state entry length to output length
-                    mstore(stateEntry, sub(mload(output), 32))
+                    mstore(entry, sub(mload(output), 32))
                 }
                 // Copy the state data over
-                memcpy(output, 32, stateEntry, 0, stateEntry.length);
+                memcpy(output, 32, entry, 0, entry.length);
             }
         } else {
             // Single word
             require(output.length == 32, "Only one return value permitted");
 
-            bytes memory stateEntry = state[idx & INDEX_MASK];
-            if(stateEntry.length < 32) {
-                stateEntry = state[idx & INDEX_MASK] = new bytes(32);
+            bytes memory entry = state[idx & INDEX_MASK];
+            if(entry.length < 32) {
+                entry = state[idx & INDEX_MASK] = new bytes(32);
             }
             assembly {
                 let word := mload(add(output, 32))
-                mstore(stateEntry, 32)
-                mstore(add(stateEntry, 32), word)
+                mstore(entry, 32)
+                mstore(add(entry, 32), word)
             }
         }
 
