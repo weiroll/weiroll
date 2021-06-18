@@ -11,17 +11,19 @@ contract Executor {
     {
         for (uint256 i = 0; i < commands.length; i++) {
             bytes32 command = commands[i];
-            address target = address(uint160(uint256(command)));
-            bytes4 selector = bytes4(command);
 
-            bytes memory input = state.buildInputs(
-                selector,
-                bytes7(command << 32)
-            );
+            (bool success, bytes memory outdata) =
+                // target
+                address(uint160(uint256(command))).delegatecall(
+                // inputs
+                    state.buildInputs(
+                        //selector
+                        bytes4(command),
+                        bytes7(command << 32)
+                    )
+                );
 
-            (bool success, bytes memory outdata) = target.delegatecall(input);
             require(success, "Call failed");
-
             state = state.writeOutputs(bytes1(command << 88), outdata);
         }
         return state;
