@@ -6,19 +6,19 @@ contract Events {
     event LogBytes32(bytes32 message);
     event LogUint(uint256 message);
 
-    function logBytes(bytes calldata message) public {
+    function logBytes(bytes calldata message) external {
         emit LogBytes(message);
     }
 
-    function logString(string calldata message) public {
+    function logString(string calldata message) external {
         emit LogString(message);
     }
 
-    function logBytes32(bytes32 message) public {
+    function logBytes32(bytes32 message) external {
         emit LogBytes32(message);
     }
 
-    function logUint(uint256 message) public {
+    function logUint(uint256 message) external {
         emit LogUint(message);
     }
 }
