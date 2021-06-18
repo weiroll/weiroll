@@ -10,7 +10,8 @@
     "hardhat": "^2.3.3",
     "prettier": "^2.3.1",
     "prettier-plugin-solidity": "*",
-    "solhint-plugin-prettier": "^0.0.5"
+    "solhint-plugin-prettier": "^0.0.5",
+    "@openzeppelin/contracts": "^4.1.0"
   },
   "scripts": {
     "test": "hardhat test",

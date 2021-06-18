@@ -12,8 +12,10 @@ contract Executor {
         for (uint256 i = 0; i < commands.length; i++) {
             bytes32 command = commands[i];
 
-            (bool success, bytes memory outdata) = // target
-            address(uint160(uint256(command))).delegatecall(
+            (
+                bool success,
+                bytes memory outdata // target
+            ) = address(uint160(uint256(command))).delegatecall(
                 // inputs
                 state.buildInputs(
                     //selector
