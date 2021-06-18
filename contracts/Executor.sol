@@ -5,8 +5,8 @@ import "./CommandBuilder.sol";
 contract Executor {
     using CommandBuilder for bytes[];
 
-    function execute(bytes32[] calldata commands, bytes[] memory state)
-        public
+    function _execute(bytes32[] calldata commands, bytes[] memory state)
+        internal
         returns (bytes[] memory)
     {
         for (uint256 i = 0; i < commands.length; i++) {
