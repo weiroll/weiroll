@@ -25,12 +25,12 @@ describe("Executor", function () {
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
 
-    /* transfer some balance to executor since we're not delegatecalling currently */
     const Executor = await ethers.getContractFactory("Executor");
     executor = await Executor.deploy();
 
-    /* ensure that transfer was successful */
+    /* transfer some balance to executor */
     let ttx = await tokenContract.transfer(executor.address, amount);
+    /* ensure that transfer was successful */
     await expect(ttx).to.emit(tokenContract, "Transfer").withArgs(selfAddr, executor.address, amount);
   });
 
