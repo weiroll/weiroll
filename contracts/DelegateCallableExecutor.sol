@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 import "./Executor.sol";
 
 contract DelegateCallableExecutor is Executor {
-
     address immutable self;
 
     modifier ensureDelegateCall() {
@@ -16,9 +15,9 @@ contract DelegateCallableExecutor is Executor {
     }
 
     function execute(bytes32[] calldata commands, bytes[] memory state)
-    public
-    ensureDelegateCall
-    returns (bytes[] memory)
+        public
+        ensureDelegateCall
+        returns (bytes[] memory)
     {
         return _execute(commands, state);
     }
