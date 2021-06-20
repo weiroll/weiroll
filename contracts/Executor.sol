@@ -59,7 +59,7 @@ contract Executor {
                 uint256 calleth;
                 bytes memory v = state[uint8(bytes1(command << 40))];
                 assembly {
-                    mstore(add(calleth, 0x20), v)
+                    mstore(calleth, add(v, 0x20))
                 }
                 (success, outdata) = // target
                 address(uint160(uint256(command))).call{value: calleth}(
