@@ -16,7 +16,7 @@ library CommandBuilder {
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
         // Determine the length of the encoded data
-        for (uint256 i = 0; i < 7; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
@@ -53,7 +53,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i = 0; i < 7; i++) {
+        for (uint256 i = 0; i < 6; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
