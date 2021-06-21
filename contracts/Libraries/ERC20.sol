@@ -59,6 +59,7 @@ contract LibERC20 {
         token.approve(target, amount);
         (bool success, bytes memory outdata) = target.call(data);
         require(success, "approveAndCall target.call reverted");
+        token.approve(target, 0);
         return outdata;
     }
 
@@ -72,6 +73,7 @@ contract LibERC20 {
         token.approve(target, amount);
         (bool success, bytes memory outdata) = target.call{value: value}(data);
         require(success, "approveAndCallWithValue target.call reverted");
+        token.approve(target, 0);
         return outdata;
     }
 }
