@@ -108,8 +108,10 @@ library CommandBuilder {
                 require(argptr == 32, "Only one return value permitted");
                 bytes memory entry = state[idx & INDEX_MASK];
                 // Only allocate new memory if we have to
-                if(entry.length < output.length - 32) {
-                    entry = state[idx & INDEX_MASK] = new bytes(output.length - 32);
+                if (entry.length < output.length - 32) {
+                    entry = state[idx & INDEX_MASK] = new bytes(
+                        output.length - 32
+                    );
                 }
                 assembly {
                     // Set state entry length to output length
@@ -123,7 +125,7 @@ library CommandBuilder {
             require(output.length == 32, "Only one return value permitted");
 
             bytes memory entry = state[idx & INDEX_MASK];
-            if(entry.length < 32) {
+            if (entry.length < 32) {
                 entry = state[idx & INDEX_MASK] = new bytes(32);
             }
             assembly {
