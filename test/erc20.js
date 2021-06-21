@@ -17,7 +17,7 @@ describe("Executor", function () {
   let selfAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
   before(async () => {
-    erc20 = await deployLibrary("ERC20Ops");
+    erc20 = await deployLibrary("LibERC20");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.fromEthersContract(eventsContract);

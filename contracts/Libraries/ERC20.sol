@@ -2,49 +2,49 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract ERC20Ops {
-    function totalSupply(address token) external view returns (uint256) {
-        return IERC20(token).totalSupply();
+contract LibERC20 {
+    function totalSupply(IERC20 token) external view returns (uint256) {
+        return token.totalSupply();
     }
 
-    function balanceOf(address token, address account)
+    function balanceOf(IERC20 token, address account)
         external
         view
         returns (uint256)
     {
-        return IERC20(token).balanceOf(account);
+        return token.balanceOf(account);
     }
 
     function transfer(
-        address token,
+        IERC20 token,
         address recipient,
         uint256 amount
     ) external returns (bool) {
-        return IERC20(token).transfer(recipient, amount);
+        return token.transfer(recipient, amount);
     }
 
     function allowance(
-        address token,
+        IERC20 token,
         address owner,
         address spender
     ) external view returns (uint256) {
-        return IERC20(token).allowance(owner, spender);
+        return token.allowance(owner, spender);
     }
 
     function approve(
-        address token,
+        IERC20 token,
         address spender,
         uint256 amount
     ) external returns (bool) {
-        return IERC20(token).approve(spender, amount);
+        return token.approve(spender, amount);
     }
 
     function transferFrom(
-        address token,
+        IERC20 token,
         address sender,
         address recipient,
         uint256 amount
     ) external returns (bool) {
-        return IERC20(token).transferFrom(sender, recipient, amount);
+        return token.transferFrom(sender, recipient, amount);
     }
 }
