@@ -47,4 +47,31 @@ contract LibERC20 {
     ) external returns (bool) {
         return token.transferFrom(sender, recipient, amount);
     }
+
+    /* Weiroll script utility functions */
+
+    function approveAndCall(
+        IERC20 token,
+        address target,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bytes memory) {
+        token.approve(target, amount);
+        (bool success, bytes memory outdata) = target.call(data);
+        require(success, "approveAndCall target.call reverted");
+        return outdata;
+    }
+
+    function approveAndCallWithValue(
+        IERC20 token,
+        address target,
+        uint256 amount,
+        bytes calldata data,
+        uint256 value
+    ) external returns (bytes memory) {
+        token.approve(target, amount);
+        (bool success, bytes memory outdata) = target.call{value: value}(data);
+        require(success, "approveAndCallWithValue target.call reverted");
+        return outdata;
+    }
 }
