@@ -45,7 +45,7 @@ The `ext` bit signifies that this is an extended command, and as such the next c
 
 Bytes 2-5 are reserved for future use.
 
-The 3-byte `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
+The 2-byte `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
 
 ```
    ┌──────┬───────────────────┐
