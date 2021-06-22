@@ -86,7 +86,18 @@ contract Executor {
             }
 
             require(success, "Call failed");
-            state = state.writeOutputs(bytes1(command << 88), outdata);
+
+            if (flags & COMMAND_TUPLE_RETURN != 0){
+                uint8 idx = uint8(bytes1(command << 88));
+                bytes memory entry = state[idx] = new bytes(
+                    outdata.length
+                );
+                CommandBuilder.memcpy(outdata, 0, entry, 0, entry.length);
+            }
+            else {
+                state = state.writeOutputs(bytes1(command << 88), outdata);
+            }
+
         }
         return state;
     }
