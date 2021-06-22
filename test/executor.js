@@ -39,6 +39,15 @@ describe("Executor", function () {
     );
     return executor.execute(encodedCommands, state);
   }
+
+  function tempCommandPatch(commands){
+      let i = 0;
+      for (i = 0; i < commands.length; i++){
+          command = commands[i]
+          commands[i] = command.slice(0, 10) + "00" + command.slice(10, 22)  + command.slice(24)
+      }
+  }
+
   
   it("Should execute a simple addition program", async () => {
     const planner = new weiroll.Planner();
@@ -50,6 +59,7 @@ describe("Executor", function () {
     }
     planner.addCommand(events.logUint(b));
     const {commands, state} = planner.plan();
+    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -65,6 +75,7 @@ describe("Executor", function () {
     const len = planner.addCommand(strings.strlen(testString));
     planner.addCommand(events.logUint(len));
     const {commands, state} = planner.plan();
+    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -80,6 +91,7 @@ describe("Executor", function () {
     const result = planner.addCommand(strings.strcat(testString, testString));
     planner.addCommand(events.logString(result));
     const {commands, state} = planner.plan();
+    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -95,6 +107,7 @@ describe("Executor", function () {
     const result = planner.addCommand(math.sum([1, 2, 3]));
     planner.addCommand(events.logUint(result));
     const {commands, state} = planner.plan();
+    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -107,8 +120,8 @@ describe("Executor", function () {
 
   it("Should pass and return raw state to functions", async () => {
     const commands = [
-      [stateTest, "addSlots", "0x000102feffffff", "0xfe"],
-      [events, "logUint", "0x00ffffffffffff", "0xff"]
+      [stateTest, "addSlots", "0x00000102feffff", "0xfe"],
+      [events, "logUint", "0x0000ffffffffff", "0xff"]
     ];
     const state = [
       // dest slot index

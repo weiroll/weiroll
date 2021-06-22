@@ -9,14 +9,14 @@ library CommandBuilder {
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
-        bytes7 indices
+        bytes32 indices
     ) internal view returns (bytes memory ret) {
         uint256 count = 0; // Number of bytes in whole ABI encoded message
         uint256 free = 0; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
         // Determine the length of the encoded data
-        for (uint256 i = 0; i < 6; i++) {
+        for (uint256 i = 0; i < 32; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
@@ -53,7 +53,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i = 0; i < 6; i++) {
+        for (uint256 i = 0; i < 32; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
