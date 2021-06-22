@@ -43,9 +43,9 @@ If `tup` is set, the return for this command will be assigned to the state slot 
 
 The `ext` bit signifies that this is an extended command, and as such the next command should be treated as 32-byte `in` list of indices, rather than the 6-byte list in the packed command struct.
 
-Bytes 2-5 are reserved for future use.
+Bits 2-5 are reserved for future use.
 
-The 2-byte `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
+The 2-bit `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
 
 ```
    ┌──────┬───────────────────┐
