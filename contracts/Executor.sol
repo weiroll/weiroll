@@ -22,13 +22,13 @@ contract Executor {
     {
         for (uint256 i = 0; i < commands.length; i++) {
             bytes32 command = commands[i];
-            uint8 calltype = uint8(bytes1(command << 32));
+            uint8 flags = uint8(bytes1(command << 32));
             bytes32 indices;
 
             bool success;
             bytes memory outdata;
 
-            if (calltype & COMMAND_EXTENDED_MASK != 0) {
+            if (flags & COMMAND_EXTENDED_MASK != 0) {
                 // check for i+1 >= commands.length here?
                 indices = commands[i + 1];
                 i += 1;
@@ -36,7 +36,7 @@ contract Executor {
                 indices = bytes32(uint256(command << 40) | SHORT_COMMAND_MASK);
             }
 
-            if (calltype & COMMAND_CALLTYPE_MASK == CT_DELEGATECALL) {
+            if (flags & COMMAND_CALLTYPE_MASK == CT_DELEGATECALL) {
                 (success, outdata) = address(uint160(uint256(command))) // target
                 .delegatecall(
                     // inputs
@@ -46,7 +46,7 @@ contract Executor {
                         indices
                     )
                 );
-            } else if (calltype & COMMAND_CALLTYPE_MASK == CT_CALL) {
+            } else if (flags & COMMAND_CALLTYPE_MASK == CT_CALL) {
                 (success, outdata) = address(uint160(uint256(command))).call( // target
                     // inputs
                     state.buildInputs(
@@ -55,7 +55,7 @@ contract Executor {
                         indices
                     )
                 );
-            } else if (calltype & COMMAND_CALLTYPE_MASK == CT_STATICCALL) {
+            } else if (flags & COMMAND_CALLTYPE_MASK == CT_STATICCALL) {
                 (success, outdata) = address(uint160(uint256(command))) // target
                 .staticcall(
                     // inputs
@@ -65,7 +65,7 @@ contract Executor {
                         indices
                     )
                 );
-            } else if (calltype & COMMAND_CALLTYPE_MASK == CT_VALUECALL) {
+            } else if (flags & COMMAND_CALLTYPE_MASK == CT_VALUECALL) {
                 uint256 calleth;
                 bytes memory v = state[uint8(bytes1(indices))];
                 assembly {
