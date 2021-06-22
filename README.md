@@ -30,7 +30,7 @@ Each command is a `bytes32` containing the following fields (MSB first):
  - `o` is the 1-byte argument specification described below, for the return value
  - `target` is the address to call
 
-The 1-byte argument flags argument `f` has the following field structure:
+The 1-byte flags argument `f` has the following field structure:
 
 ```
   0   1   2   3   4   5   6   7
