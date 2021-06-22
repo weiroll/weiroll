@@ -19,17 +19,50 @@ Each command is a `bytes32` containing the following fields (MSB first):
 ```
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-┌───────────────────────────────────────────────────────────────┐
-│  sel  |    in       |o|              target                   │
-└───────────────────────────────────────────────────────────────┘
+┌───────┬─┬───────────┬─┬───────────────────────────────────────┐
+│  sel  │f│    in     │o│              target                   │
+└───────┴─┴───────────┴─┴───────────────────────────────────────┘
 ```
 
  - `sel` is the 4-byte function selector to call
+ - `f` is a flags byte that specifies calltype, and whether this is an extended command
  - `in` is an array of 1-byte argument specifications described below, for the input arguments
  - `o` is the 1-byte argument specification described below, for the return value
  - `target` is the address to call
 
-The 1-byte argument specifier values describe how each input or output argument should be treated, and have the following fields (MSB first):
+The 1-byte argument flags argument `f` has the following field structure:
+
+```
+  0   1   2   3   4   5   6   7
+┌───┬───┬───────────────┬────────┐
+│tup│ext│   reserved    │calltype│
+└───┴───┴───────────────┴────────┘
+```
+
+If `tup` is set, the return for this command will be assigned to the state slot directly, without any attempt at processing or decoding.
+
+The `ext` bit signifies that this is an extended command, and as such the next command should be treated as 32-byte `in` list of indices, rather than the 6-byte list in the packed command struct.
+
+Bytes 2-5 are reserved for future use.
+
+The 3-byte `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
+
+```
+   ┌──────┬───────────────────┐
+   │ 0x00 │  DELEGATECALL     │
+   ├──────┼───────────────────┤
+   │ 0x01 │  CALL             │
+   ├──────┼───────────────────┤
+   │ 0x02 │  STATICCALL       │
+   ├──────┼───────────────────┤
+   │ 0x03 │  CALL with value  │
+   └──────┴───────────────────┘
+```
+
+If `calltype` equals `CALL with value`, then the first argument in the `in` input list is taken to be the amount of ETH that will be supplied to the call, and the rest of the arguments are the arguments to the called function, both processed as described below.
+
+
+Each 1-byte argument specifier value describes how each input or output argument should be treated, and has the following fields (MSB first):
 
 ```
   0   1   2   3   4   5   6   7
