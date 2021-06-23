@@ -5,7 +5,7 @@ contract MultiReturn {
 
     function intTuple()
         public
-        view
+        pure
         returns (
             uint256,
             uint256,
@@ -15,7 +15,7 @@ contract MultiReturn {
         return (0xbad, 0xdeed, 0xcafe);
     }
 
-    function tupleConsumer(uint256 arg) public returns (uint256) {
+    function tupleConsumer(uint256 arg) public {
         emit Calculated(arg);
     }
 }

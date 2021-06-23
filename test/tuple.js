@@ -36,7 +36,7 @@ describe("Executor", function () {
     return executor.execute(encodedCommands, state);
   }
   
-  it("Should perform a tuple return that's sliced before being fed to another function", async () => {
+  it("Should perform a tuple return that's sliced before being fed to another function (first var)", async () => {
 
     const commands = [
       [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"],
@@ -57,6 +57,32 @@ describe("Executor", function () {
     await expect(tx)
       .to.emit(multiReturn.attach(executor.address), "Calculated")
       .withArgs(0xbad); 
+
+    const receipt = await tx.wait();
+    console.log(`Tuple return+slice: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should perform a tuple return that's sliced before being fed to another function (second var)", async () => {
+
+    const commands = [
+      [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"],
+      [tupler,      "tupleSlicer",   "0x00010280ffffff", "0x80"],
+      [multiReturn, "tupleConsumer", "0x0000ffffffffff", "0xff"]
+    ];
+
+    const state = [
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000020",
+      "0x0000000000000000000000000000000000000000000000000000000000000020",
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    ];
+
+
+    const tx = await execute(commands, state);
+
+    await expect(tx)
+      .to.emit(multiReturn.attach(executor.address), "Calculated")
+      .withArgs(0xdeed); 
 
     const receipt = await tx.wait();
     console.log(`Tuple return+slice: ${receipt.gasUsed.toNumber()} gas`);
