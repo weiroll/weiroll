@@ -4,6 +4,7 @@ uint8 constant VARIABLE_LENGTH = 0x80;
 uint8 constant INDEX_MASK = 0x7f;
 uint8 constant END_OF_ARGS = 0xff;
 uint8 constant USE_STATE = 0xfe;
+uint8 constant TUPLE_RETURN = 0xfd;
 
 library CommandBuilder {
     function buildInputs(
@@ -105,7 +106,10 @@ library CommandBuilder {
                 assembly {
                     argptr := mload(add(output, 32))
                 }
-                require(argptr == 32, "Only one return value permitted");
+                require(
+                    argptr == 32,
+                    "Only one return value permitted (variable)"
+                );
                 bytes memory entry = state[idx & INDEX_MASK];
                 // Only allocate new memory if we have to
                 if (entry.length < output.length - 32) {
@@ -122,7 +126,10 @@ library CommandBuilder {
             }
         } else {
             // Single word
-            require(output.length == 32, "Only one return value permitted");
+            require(
+                output.length == 32,
+                "Only one return value permitted (static)"
+            );
 
             bytes memory entry = state[idx & INDEX_MASK];
             if (entry.length < 32) {

@@ -87,17 +87,22 @@ contract Executor {
 
             require(success, "Call failed");
 
-            if (flags & COMMAND_TUPLE_RETURN != 0){
+            if (
+                flags & COMMAND_TUPLE_RETURN != 0 &&
+                bytes1(command << 88) != 0xff
+            ) {
                 uint8 idx = uint8(bytes1(command << 88));
                 bytes memory entry = state[idx] = new bytes(
-                    outdata.length
+                    outdata.length + 32
                 );
-                CommandBuilder.memcpy(outdata, 0, entry, 0, entry.length);
-            }
-            else {
+                CommandBuilder.memcpy(outdata, 0, entry, 32, outdata.length);
+                assembly {
+                    let l := mload(outdata)
+                    mstore(add(entry, 32), l)
+                }
+            } else {
                 state = state.writeOutputs(bytes1(command << 88), outdata);
             }
-
         }
         return state;
     }
