@@ -6,13 +6,12 @@ contract LibTupler {
         uint256 size,
         bytes memory slot
     ) external returns (bytes memory) {
-        bytes memory ret = new bytes(size);
-
-        memcpy(slot, offset, ret, 0, size);
-
-        uint256 rsz = size + 32;
+        // the below should be equivalent to:
+        //        bytes memory ret = new bytes(size);
+        //        memcpy(slot, offset, ret, 0, size);
         assembly {
-            return(ret, rsz)
+            mstore(add(slot, offset), size)
+            return(add(slot, offset), add(size, 32))
         }
     }
 
