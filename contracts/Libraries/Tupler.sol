@@ -7,8 +7,7 @@ contract LibTupler {
         returns (bytes32)
     {
         assembly {
-            mstore(add(tuple, mul(index, 32)), 32)
-            return(add(tuple, mul(index, 32)), 64)
+            return(add(tuple, mul(add(index, 1), 32)), 32)
         }
     }
 }
