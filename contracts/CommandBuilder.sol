@@ -105,7 +105,10 @@ library CommandBuilder {
                 assembly {
                     argptr := mload(add(output, 32))
                 }
-                require(argptr == 32, "Only one return value permitted");
+                require(
+                    argptr == 32,
+                    "Only one return value permitted (variable)"
+                );
                 bytes memory entry = state[idx & INDEX_MASK];
                 // Only allocate new memory if we have to
                 if (entry.length < output.length - 32) {
@@ -122,7 +125,10 @@ library CommandBuilder {
             }
         } else {
             // Single word
-            require(output.length == 32, "Only one return value permitted");
+            require(
+                output.length == 32,
+                "Only one return value permitted (static)"
+            );
 
             bytes memory entry = state[idx & INDEX_MASK];
             if (entry.length < 32) {
@@ -136,6 +142,20 @@ library CommandBuilder {
         }
 
         return state;
+    }
+
+    function writeTuple(
+        bytes[] memory state,
+        bytes1 index,
+        bytes memory output
+    ) internal view {
+        uint8 idx = uint8(index);
+        bytes memory entry = state[idx] = new bytes(output.length + 32);
+        memcpy(output, 0, entry, 32, output.length);
+        assembly {
+            let l := mload(output)
+            mstore(add(entry, 32), l)
+        }
     }
 
     function memcpy(
