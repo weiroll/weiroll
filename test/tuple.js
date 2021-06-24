@@ -40,7 +40,7 @@ describe("Executor", function () {
 
     const commands = [
       [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"],
-      [tupler,      "extractElement","0x008001ffffffff", "0x80"],
+      [tupler,      "extractElement","0x008001ffffffff", "0x00"],
       [multiReturn, "tupleConsumer", "0x0000ffffffffff", "0xff"]
     ];
 
@@ -64,7 +64,7 @@ describe("Executor", function () {
 
     const commands = [
       [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"],
-      [tupler,      "extractElement","0x008001ffffffff", "0x80"],
+      [tupler,      "extractElement","0x008001ffffffff", "0x00"],
       [multiReturn, "tupleConsumer", "0x0000ffffffffff", "0xff"]
     ];
 
