@@ -93,15 +93,7 @@ contract Executor {
                 flags & COMMAND_TUPLE_RETURN != 0 &&
                 bytes1(command << 88) != bytes1(NO_VALUE)
             ) {
-                uint8 idx = uint8(bytes1(command << 88));
-                bytes memory entry = state[idx] = new bytes(
-                    outdata.length + 32
-                );
-                CommandBuilder.memcpy(outdata, 0, entry, 32, outdata.length);
-                assembly {
-                    let l := mload(outdata)
-                    mstore(add(entry, 32), l)
-                }
+                state.writeTuple(bytes1(command << 88), outdata);
             } else {
                 state = state.writeOutputs(bytes1(command << 88), outdata);
             }

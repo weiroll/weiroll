@@ -144,6 +144,20 @@ library CommandBuilder {
         return state;
     }
 
+    function writeTuple(
+        bytes[] memory state,
+        bytes1 index,
+        bytes memory output
+    ) internal view {
+        uint8 idx = uint8(index);
+        bytes memory entry = state[idx] = new bytes(output.length + 32);
+        memcpy(output, 0, entry, 32, output.length);
+        assembly {
+            let l := mload(output)
+            mstore(add(entry, 32), l)
+        }
+    }
+
     function memcpy(
         bytes memory src,
         uint256 srcidx,

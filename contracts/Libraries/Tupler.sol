@@ -4,7 +4,7 @@ contract LibTupler {
     function extractElement(bytes memory tuple, uint256 index)
         public
         pure
-        returns (bytes memory)
+        returns (bytes32)
     {
         assembly {
             mstore(add(tuple, mul(index, 32)), 32)
