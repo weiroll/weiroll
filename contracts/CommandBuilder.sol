@@ -4,7 +4,6 @@ uint8 constant VARIABLE_LENGTH = 0x80;
 uint8 constant INDEX_MASK = 0x7f;
 uint8 constant END_OF_ARGS = 0xff;
 uint8 constant USE_STATE = 0xfe;
-uint8 constant TUPLE_RETURN = 0xfd;
 
 library CommandBuilder {
     function buildInputs(

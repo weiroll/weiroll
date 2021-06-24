@@ -11,6 +11,8 @@ uint8 constant COMMAND_CALLTYPE_MASK = 0x3;
 uint8 constant COMMAND_EXTENDED_MASK = 0x80;
 uint8 constant COMMAND_TUPLE_RETURN = 0x40;
 
+uint8 constant NO_VALUE = 0xff;
+
 uint256 constant SHORT_COMMAND_MASK = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
 contract Executor {
@@ -78,7 +80,7 @@ contract Executor {
                     state.buildInputs(
                         //selector
                         bytes4(command),
-                        bytes32(uint256(indices << 8) | 0xFF)
+                        bytes32(uint256(indices << 8) | NO_VALUE)
                     )
                 );
             } else {
@@ -89,7 +91,7 @@ contract Executor {
 
             if (
                 flags & COMMAND_TUPLE_RETURN != 0 &&
-                bytes1(command << 88) != 0xff
+                bytes1(command << 88) != bytes1(NO_VALUE)
             ) {
                 uint8 idx = uint8(bytes1(command << 88));
                 bytes memory entry = state[idx] = new bytes(
