@@ -19,8 +19,11 @@ describe("ERC20", function () {
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
 
-    const Executor = await ethers.getContractFactory("Executor");
-    executor = await Executor.deploy();
+    const ExecutorLibrary = await ethers.getContractFactory("Executor");
+    const executorLibrary = await ExecutorLibrary.deploy();
+
+    const Executor = await ethers.getContractFactory("TestableExecutor");
+    executor = await Executor.deploy(executorLibrary.address);
 
     /* transfer some balance to executor */
     let ttx = await tokenContract.transfer(executor.address, amount.mul(3));

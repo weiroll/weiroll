@@ -16,8 +16,11 @@ describe("Tupler", function () {
 
     tupler = await deployLibrary("LibTupler");
 
-    const Executor = await ethers.getContractFactory("Executor");
-    executor = await Executor.deploy();
+    const ExecutorLibrary = await ethers.getContractFactory("Executor");
+    const executorLibrary = await ExecutorLibrary.deploy();
+
+    const Executor = await ethers.getContractFactory("TestableExecutor");
+    executor = await Executor.deploy(executorLibrary.address);
 
     events = await (await ethers.getContractFactory("Events")).deploy();
   });
