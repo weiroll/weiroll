@@ -24,8 +24,11 @@ describe("Executor", function () {
     const StateTest = await ethers.getContractFactory("StateTest");
     stateTest = await StateTest.deploy();
 
+    const ExecutorLibrary = await ethers.getContractFactory("Executor");
+    const executorLibrary = await ExecutorLibrary.deploy();
+
     const Executor = await ethers.getContractFactory("TestableExecutor");
-    executor = await Executor.deploy();
+    executor = await Executor.deploy(executorLibrary.address);
   });
 
   function execute(commands, state) {

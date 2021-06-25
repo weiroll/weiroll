@@ -5,20 +5,32 @@ import "./CommandBuilder.sol";
 contract Executor {
     using CommandBuilder for bytes[];
 
-    function _execute(bytes32[] calldata commands, bytes[] memory state)
-        internal
-        returns (bytes[] memory)
+    address immutable self;
+
+    modifier ensureDelegateCall() {
+        require(address(this) != self);
+        _;
+    }
+
+    constructor() {
+        self = address(this);
+    }
+
+    function execute(bytes32[] calldata commands, bytes[] memory state)
+    public
+    ensureDelegateCall
+    returns (bytes[] memory)
     {
         for (uint256 i = 0; i < commands.length; i++) {
             bytes32 command = commands[i];
 
             (
-                bool success,
-                bytes memory outdata // target
+            bool success,
+            bytes memory outdata // target
             ) = address(uint160(uint256(command))).delegatecall(
-                // inputs
+            // inputs
                 state.buildInputs(
-                    //selector
+                //selector
                     bytes4(command),
                     bytes7(command << 32)
                 )
