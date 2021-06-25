@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-contract LibTupler {
+contract Tupler {
     function extractElement(bytes memory tuple, uint256 index)
         public
         pure

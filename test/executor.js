@@ -1,12 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
-
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
-}
+const util = require("utils/utils")
 
 describe("Executor", function () {
   const testString = "Hello, world!";
@@ -15,8 +10,8 @@ describe("Executor", function () {
   let eventsContract;
 
   before(async () => {
-    math = await deployLibrary("Math");
-    strings = await deployLibrary("Strings");
+    math = await util.deployLibrary("Math");
+    strings = await util.deployLibrary("Strings");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.fromEthersContract(eventsContract);

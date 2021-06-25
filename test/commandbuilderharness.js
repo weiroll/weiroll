@@ -1,12 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
-
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
-}
+const utils = require("utils/utils")
 
 describe("CommandBuilderHarness", function () {
   let cbh;
@@ -18,15 +13,15 @@ describe("CommandBuilderHarness", function () {
     const Cbh = await ethers.getContractFactory("CommandBuilderHarness");
     cbh = await Cbh.deploy();
 
-    math = await deployLibrary("Math");
-    strings = await deployLibrary("Strings");
+    math = await utils.deployLibrary("Math");
+    strings = await utils.deployLibrary("Strings");
   });
 
   async function executeBuildInputs(commands, state, abiout, msg){
     for (let c of commands) {
-        selector = ethers.utils.hexDataSlice(c, 0, 4);
-        indices = ethers.utils.hexDataSlice(c, 4, 4+7);
-        target = ethers.utils.hexDataSlice(c, 4+7);
+        const selector = ethers.utils.hexDataSlice(c, 0, 4);
+        const indices = ethers.utils.hexDataSlice(c, 4, 4+7);
+        const target = ethers.utils.hexDataSlice(c, 4+7);
         const tx = await cbh.testBuildInputs(state, selector, indices);
         expect(tx).to.equal(selector + abiout.slice(2));
         // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);

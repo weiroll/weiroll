@@ -1,26 +1,20 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
+const util = require("utils/utils")
 
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
-}
-
-describe("Executor", function () {
+describe("ERC20", function () {
 
   let events, executor, erc20;
-  let eventsContract;
+  let tokenContract;
   let supply = ethers.BigNumber.from("100000000000000000000");
   let amount = supply.div(10);
   let selfAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
   before(async () => {
-    erc20 = await deployLibrary("LibERC20");
+    erc20 = await util.deployLibrary("LibERC20");
     
-    eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.fromEthersContract(eventsContract);
+    events = await util.deployLibrary("Events")
 
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
