@@ -18,8 +18,20 @@ uint256 constant SHORT_COMMAND_MASK = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFF
 contract Executor {
     using CommandBuilder for bytes[];
 
+    address immutable self;
+
+    modifier ensureDelegateCall() {
+        require(address(this) != self);
+        _;
+    }
+
+    constructor() {
+        self = address(this);
+    }
+
     function execute(bytes32[] calldata commands, bytes[] memory state)
         public
+        ensureDelegateCall
         returns (bytes[] memory)
     {
         for (uint256 i = 0; i < commands.length; i++) {
