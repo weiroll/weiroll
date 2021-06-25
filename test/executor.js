@@ -10,8 +10,8 @@ describe("Executor", function () {
   let eventsContract;
 
   before(async () => {
-    math = await deployLibrary("Math");
-    strings = await deployLibrary("Strings");
+    math = await deployLibrary("LibMath");
+    strings = await deployLibrary("LibStrings");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = Contract.fromEthersContract(eventsContract);

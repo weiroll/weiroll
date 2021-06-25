@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-contract Events {
+contract LibEvents {
     event LogBytes(bytes message);
     event LogString(string message);
     event LogBytes32(bytes32 message);

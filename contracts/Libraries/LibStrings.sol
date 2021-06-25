@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-contract Strings {
+contract LibStrings {
     function strlen(string calldata x) external pure returns (uint256) {
         return bytes(x).length;
     }

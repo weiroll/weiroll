@@ -12,9 +12,9 @@ describe("ERC20", function () {
   let selfAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
   before(async () => {
-    erc20 = await deployLibrary("ERC20");
+    erc20 = await deployLibrary("LibERC20");
     
-    events = await deployLibrary("Events")
+    events = await deployLibrary("LibEvents")
 
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);

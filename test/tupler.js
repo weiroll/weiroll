@@ -14,7 +14,7 @@ describe("Tupler", function () {
 
     multiReturn = await deployLibrary("MultiReturn");
 
-    tupler = await deployLibrary("Tupler");
+    tupler = await deployLibrary("LibTupler");
 
     const Executor = await ethers.getContractFactory("Executor");
     executor = await Executor.deploy();
