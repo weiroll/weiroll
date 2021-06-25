@@ -12,7 +12,7 @@ describe("ERC20", function () {
   let selfAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
   before(async () => {
-    erc20 = await util.deployLibrary("LibERC20");
+    erc20 = await util.deployLibrary("ERC20");
     
     events = await util.deployLibrary("Events")
 
