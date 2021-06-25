@@ -19,17 +19,50 @@ Each command is a `bytes32` containing the following fields (MSB first):
 ```
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-┌───────────────────────────────────────────────────────────────┐
-│  sel  |    in       |o|              target                   │
-└───────────────────────────────────────────────────────────────┘
+┌───────┬─┬───────────┬─┬───────────────────────────────────────┐
+│  sel  │f│    in     │o│              target                   │
+└───────┴─┴───────────┴─┴───────────────────────────────────────┘
 ```
 
  - `sel` is the 4-byte function selector to call
+ - `f` is a flags byte that specifies calltype, and whether this is an extended command
  - `in` is an array of 1-byte argument specifications described below, for the input arguments
  - `o` is the 1-byte argument specification described below, for the return value
  - `target` is the address to call
 
-The 1-byte argument specifier values describe how each input or output argument should be treated, and have the following fields (MSB first):
+The 1-byte flags argument `f` has the following field structure:
+
+```
+  0   1   2   3   4   5   6   7
+┌───┬───┬───────────────┬────────┐
+│tup│ext│   reserved    │calltype│
+└───┴───┴───────────────┴────────┘
+```
+
+If `tup` is set, the return for this command will be assigned to the state slot directly, without any attempt at processing or decoding.
+
+The `ext` bit signifies that this is an extended command, and as such the next command should be treated as 32-byte `in` list of indices, rather than the 6-byte list in the packed command struct.
+
+Bits 2-5 are reserved for future use.
+
+The 2-bit `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
+
+```
+   ┌──────┬───────────────────┐
+   │ 0x00 │  DELEGATECALL     │
+   ├──────┼───────────────────┤
+   │ 0x01 │  CALL             │
+   ├──────┼───────────────────┤
+   │ 0x02 │  STATICCALL       │
+   ├──────┼───────────────────┤
+   │ 0x03 │  CALL with value  │
+   └──────┴───────────────────┘
+```
+
+If `calltype` equals `CALL with value`, then the first argument in the `in` input list is taken to be the amount of ETH that will be supplied to the call, and the rest of the arguments are the arguments to the called function, both processed as described below.
+
+
+Each 1-byte argument specifier value describes how each input or output argument should be treated, and has the following fields (MSB first):
 
 ```
   0   1   2   3   4   5   6   7
@@ -58,7 +91,7 @@ function add(uint a, uint b) external returns (uint);
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
 
-`in` needs to specify two input values of fixed length (`var == 0b`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the two inputs should come from state elements 0 and 1, the encoded `in` data is thus `0x0001ffffffffff`.
+`f` should specify this is a delegatecall (`0x00`), `in` needs to specify two input values of fixed length (`var == 0b`). The remaining four input parameters are unneeded and should be set to `0xff`. Supposing the two inputs should come from state elements 0 and 1, the encoded `in` data is thus `0x000001ffffffff`.
 
 `out` needs to specify that the output value is fixed length (`var == 0b`). Supposing the output should be written to state element 2, the encoded `out` data is thus `0x02`.
 
@@ -72,7 +105,7 @@ function concatBytes32(bytes32[] inputs) external returns (bytes);
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
 
-`in` needs to specify one input value of variable length (`var == 1b`), that is an array of 32-byte words (`ws == 1b`). The remaining six input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0xc0ffffffffffff`.
+`f` should specify this is a delegatecall (`0x00`), `in` needs to specify one input value of variable length (`var == 1b`), that is an array of 32-byte words (`ws == 1b`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0x00c0ffffffffff`.
 
 `out` needs to specify that the output value is variable length (`var == 1b`). Supposing the output value should be written to state element 1, the encoded `out` data is thus `0x81`.
 
@@ -93,7 +126,7 @@ Input arguments must be collected from the state and assembled into a valid ABI-
 
 ### Call
 
-Next, the executor calls the target contract with the encoded input data. A `delegatecall` is used, meaning the execution takes place in the executor's context rather than the contract's own. The intention is that users of the executor will themselves `delegatecall` it, meaning that all operations take place in the user's contract's context.
+Next, the executor calls the target contract with the encoded input data. A `delegatecall` is normally used for executor library contracts, meaning the execution takes place in the executor's context rather than the contract's own, and a normal `call` is used for calling out to external contracts directly (like to an `ERC20.transfer` function). The intention is that users of the executor will themselves `delegatecall` it, meaning that all operations take place in the user's contract's context, or will seem to come directly from a user's contract address for external calls.
 
 ### Output decoding
 
