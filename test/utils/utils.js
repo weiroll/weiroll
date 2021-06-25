@@ -9,4 +9,4 @@ async function deployLibrary(name) {
 
 module.exports = {
     deployLibrary: deployLibrary
-}
+};
