@@ -1,9 +1,9 @@
 pragma solidity ^0.8.4;
 
-uint8 constant IDX_VARIABLE_LENGTH = 0x80;
-uint8 constant IDX_VALUE_MASK = 0x7f;
-uint8 constant IDX_END_OF_ARGS = 0xff;
-uint8 constant IDX_USE_STATE = 0xfe;
+uint256 constant IDX_VARIABLE_LENGTH = 0x80;
+uint256 constant IDX_VALUE_MASK = 0x7f;
+uint256 constant IDX_END_OF_ARGS = 0xff;
+uint256 constant IDX_USE_STATE = 0xfe;
 
 library CommandBuilder {
     function buildInputs(
@@ -15,9 +15,11 @@ library CommandBuilder {
         uint256 free = 0; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
+        uint256 idx;
+
         // Determine the length of the encoded data
         for (uint256 i = 0; i < 32; i++) {
-            uint8 idx = uint8(indices[i]);
+            idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
@@ -54,7 +56,7 @@ library CommandBuilder {
         }
         count = 0;
         for (uint256 i = 0; i < 32; i++) {
-            uint8 idx = uint8(indices[i]);
+            idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
@@ -92,7 +94,7 @@ library CommandBuilder {
         bytes1 index,
         bytes memory output
     ) internal view returns (bytes[] memory) {
-        uint8 idx = uint8(index);
+        uint256 idx = uint8(index);
         if (idx == IDX_END_OF_ARGS) return state;
 
         if (idx & IDX_VARIABLE_LENGTH != 0) {

@@ -5,6 +5,20 @@ import "../CommandBuilder.sol";
 contract CommandBuilderHarness {
     using CommandBuilder for bytes[];
 
+    function basecall() public pure {}
+
+    function testBuildInputsBaseGas(
+        bytes[] memory state,
+        bytes4 selector,
+        bytes7 indices
+    ) public view returns (bytes memory out) {}
+
+    function testWriteOutputsBaseGas(
+        bytes[] memory state,
+        bytes1 index,
+        bytes memory output
+    ) public view returns (bytes[] memory, bytes memory) {return (state, new bytes(32));}
+
     function testBuildInputs(
         bytes[] memory state,
         bytes4 selector,
