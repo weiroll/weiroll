@@ -1,12 +1,7 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const weiroll = require("@weiroll/weiroll.js");
-
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
-}
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Contract, Planner } from "@weiroll/weiroll.js";
+import { deployLibrary } from "./utils/utils";
 
 describe("Executor", function () {
   const testString = "Hello, world!";
@@ -15,11 +10,11 @@ describe("Executor", function () {
   let eventsContract;
 
   before(async () => {
-    math = await deployLibrary("Math");
-    strings = await deployLibrary("Strings");
+    math = await deployLibrary("LibMath");
+    strings = await deployLibrary("LibStrings");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.fromEthersContract(eventsContract);
+    events = Contract.fromEthersContract(eventsContract);
 
     const StateTest = await ethers.getContractFactory("StateTest");
     stateTest = await StateTest.deploy();
@@ -53,7 +48,7 @@ describe("Executor", function () {
 
   
   it("Should execute a simple addition program", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
     let a = 1, b = 1;
     for(let i = 0; i < 8; i++) {
       const ret = planner.addCommand(math.add(a, b));
@@ -74,7 +69,7 @@ describe("Executor", function () {
   });
 
   it("Should execute a string length program", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
     const len = planner.addCommand(strings.strlen(testString));
     planner.addCommand(events.logUint(len));
     const {commands, state} = planner.plan();
@@ -90,7 +85,7 @@ describe("Executor", function () {
   });
 
   it("Should concatenate two strings", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
     const result = planner.addCommand(strings.strcat(testString, testString));
     planner.addCommand(events.logString(result));
     const {commands, state} = planner.plan();
@@ -106,7 +101,7 @@ describe("Executor", function () {
   });
 
   it("Should sum an array of uints", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
     const result = planner.addCommand(math.sum([1, 2, 3]));
     planner.addCommand(events.logUint(result));
     const {commands, state} = planner.plan();

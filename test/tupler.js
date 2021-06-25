@@ -1,19 +1,17 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const weiroll = require("@weiroll/weiroll.js");
+import { expect } from "chai";
+import { ethers } from "hardhat";
 
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return contract;
-  //return weiroll.Contract.fromEthersContract(contract);
+  return await factory.deploy();
 }
 
-describe("Executor", function () {
+describe("Tupler", function () {
 
   let events, executor, multiReturn, tupler;
 
   before(async () => {
+
     multiReturn = await deployLibrary("MultiReturn");
 
     tupler = await deployLibrary("LibTupler");

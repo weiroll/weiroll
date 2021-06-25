@@ -1,12 +1,7 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const weiroll = require("@weiroll/weiroll.js");
-
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
-}
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Planner } from "@weiroll/weiroll.js";
+import { deployLibrary } from "./utils/utils";
 
 describe("CommandBuilderHarness", function () {
   let cbh;
@@ -24,9 +19,9 @@ describe("CommandBuilderHarness", function () {
 
   async function executeBuildInputs(commands, state, abiout, msg){
     for (let c of commands) {
-        selector = ethers.utils.hexDataSlice(c, 0, 4);
-        indices = ethers.utils.hexDataSlice(c, 4, 4+7);
-        target = ethers.utils.hexDataSlice(c, 4+7);
+        const selector = ethers.utils.hexDataSlice(c, 0, 4);
+        const indices = ethers.utils.hexDataSlice(c, 4, 4+7);
+        const target = ethers.utils.hexDataSlice(c, 4+7);
         const tx = await cbh.testBuildInputs(state, selector, indices);
         expect(tx).to.equal(selector + abiout.slice(2));
         // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
@@ -34,7 +29,7 @@ describe("CommandBuilderHarness", function () {
   }
 
   it("Should build inputs that match Math.add ABI", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let args = [1, 2];
 
@@ -48,7 +43,7 @@ describe("CommandBuilderHarness", function () {
   });
 
   it("Should build inputs that match Strings.strcat ABI", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let args = ["Hello", " World!"];
 
@@ -63,7 +58,7 @@ describe("CommandBuilderHarness", function () {
   });
 
   it("Should build inputs that match Math.sum ABI", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let args = [
       ethers.BigNumber.from("0xAAA0000000000000000000000000000000000000000000000000000000000002"),

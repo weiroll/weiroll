@@ -1,17 +1,12 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const weiroll = require("@weiroll/weiroll.js");
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Planner } from "@weiroll/weiroll.js";
+import { deployLibrary } from "./utils/utils";
 
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
-}
-
-describe("Executor", function () {
+describe("ERC20", function () {
 
   let events, executor, erc20;
-  let eventsContract;
+  let tokenContract;
   let supply = ethers.BigNumber.from("100000000000000000000");
   let amount = supply.div(10);
   let selfAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
@@ -19,8 +14,7 @@ describe("Executor", function () {
   before(async () => {
     erc20 = await deployLibrary("LibERC20");
     
-    eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.fromEthersContract(eventsContract);
+    events = await deployLibrary("LibEvents")
 
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
@@ -51,7 +45,7 @@ describe("Executor", function () {
   
 
   it("Should perform an ERC20 transfer", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let token = tokenContract.address;
     let to = selfAddr;
