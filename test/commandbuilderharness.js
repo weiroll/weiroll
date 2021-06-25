@@ -27,6 +27,10 @@ describe("CommandBuilderHarness", function () {
         selector = ethers.utils.hexDataSlice(c, 0, 4);
         indices = ethers.utils.hexDataSlice(c, 4, 4+7);
         target = ethers.utils.hexDataSlice(c, 4+7);
+        const txBaseGasNoArgs = await cbh.estimateGas.basecall();
+        const txBaseGas = await cbh.estimateGas.testBuildInputsBaseGas(state, selector, indices);
+        const txGas = await cbh.estimateGas.testBuildInputs(state, selector, indices);
+        console.log(`buildInputs gas cost: ${txGas.sub(txBaseGas).toString()} - argument passing cost: ${txBaseGas.sub(txBaseGasNoArgs).toNumber()} - total: ${txGas.toNumber()}`)
         const tx = await cbh.testBuildInputs(state, selector, indices);
         expect(tx).to.equal(selector + abiout.slice(2));
         // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
@@ -93,6 +97,9 @@ describe("CommandBuilderHarness", function () {
 
     let output = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
+    const txBaseGas = await cbh.estimateGas.testWriteOutputsBaseGas(state, index, output);
+    const txGas = await cbh.estimateGas.testWriteOutputs(state, index, output);
+    console.log("writeOutputs gas cost: ", txGas.sub(txBaseGas).toString())
     const tx = await cbh.testWriteOutputs(state, index, output);
 
     state[0] = output;
@@ -112,6 +119,9 @@ describe("CommandBuilderHarness", function () {
     
     let output = abi.encode(["uint[]"], [[1, 2, 3]]);
 
+    const txBaseGas = await cbh.estimateGas.testWriteOutputsBaseGas(state, index, output);
+    const txGas = await cbh.estimateGas.testWriteOutputs(state, index, output);
+    console.log("writeOutputs gas cost: ", txGas.sub(txBaseGas).toString())
     const tx = await cbh.testWriteOutputs(state, index, output);
 
     state[1] = ethers.utils.hexDataSlice(output, 32);
@@ -134,6 +144,9 @@ describe("CommandBuilderHarness", function () {
 
     let output = abi.encode(["bytes[]"], [precoded]);
 
+    const txBaseGas = await cbh.estimateGas.testWriteOutputsBaseGas(state, index, output);
+    const txGas = await cbh.estimateGas.testWriteOutputs(state, index, output);
+    console.log("writeOutputs gas cost: ", txGas.sub(txBaseGas).toString())
     const tx = await cbh.testWriteOutputs(state, index, output);
 
     expect(tx).to.deep.equal([precoded, output]);

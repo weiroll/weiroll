@@ -31,13 +31,16 @@ contract Executor {
         ensureDelegateCall
         returns (bytes[] memory)
     {
-        for (uint256 i = 0; i < commands.length; i++) {
-            bytes32 command = commands[i];
-            uint8 flags = uint8(bytes1(command << 32));
-            bytes32 indices;
+        bytes32 command;
+        uint256 flags;
+        bytes32 indices;
 
-            bool success;
-            bytes memory outdata;
+        bool success;
+        bytes memory outdata;
+
+        for (uint256 i = 0; i < commands.length; i++) {
+            command = commands[i];
+            flags = uint8(bytes1(command << 32));
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
