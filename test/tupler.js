@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import { ethers } from "hardhat";
 
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);

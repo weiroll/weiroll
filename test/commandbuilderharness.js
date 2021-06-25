@@ -1,7 +1,7 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const weiroll = require("@weiroll/weiroll.js");
-const utils = require("utils/utils")
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Planner } from "@weiroll/weiroll.js";
+import { deployLibrary } from "utils/utils";
 
 describe("CommandBuilderHarness", function () {
   let cbh;
@@ -13,8 +13,8 @@ describe("CommandBuilderHarness", function () {
     const Cbh = await ethers.getContractFactory("CommandBuilderHarness");
     cbh = await Cbh.deploy();
 
-    math = await utils.deployLibrary("Math");
-    strings = await utils.deployLibrary("Strings");
+    math = await deployLibrary("Math");
+    strings = await deployLibrary("Strings");
   });
 
   async function executeBuildInputs(commands, state, abiout, msg){
@@ -29,7 +29,7 @@ describe("CommandBuilderHarness", function () {
   }
 
   it("Should build inputs that match Math.add ABI", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let args = [1, 2];
 
@@ -43,7 +43,7 @@ describe("CommandBuilderHarness", function () {
   });
 
   it("Should build inputs that match Strings.strcat ABI", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let args = ["Hello", " World!"];
 
@@ -58,7 +58,7 @@ describe("CommandBuilderHarness", function () {
   });
 
   it("Should build inputs that match Math.sum ABI", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let args = [
       ethers.BigNumber.from("0xAAA0000000000000000000000000000000000000000000000000000000000002"),

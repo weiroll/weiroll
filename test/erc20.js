@@ -1,7 +1,7 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const weiroll = require("@weiroll/weiroll.js");
-const util = require("utils/utils")
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Planner } from "@weiroll/weiroll.js";
+import { deployLibrary } from "utils/utils";
 
 describe("ERC20", function () {
 
@@ -12,9 +12,9 @@ describe("ERC20", function () {
   let selfAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
   before(async () => {
-    erc20 = await util.deployLibrary("ERC20");
+    erc20 = await deployLibrary("ERC20");
     
-    events = await util.deployLibrary("Events")
+    events = await deployLibrary("Events")
 
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
@@ -42,7 +42,7 @@ describe("ERC20", function () {
   
 
   it("Should perform an ERC20 transfer", async () => {
-    const planner = new weiroll.Planner();
+    const planner = new Planner();
 
     let token = tokenContract.address;
     let to = selfAddr;
