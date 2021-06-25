@@ -9,14 +9,14 @@ library CommandBuilder {
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
-        bytes7 indices
+        bytes32 indices
     ) internal view returns (bytes memory ret) {
         uint256 count = 0; // Number of bytes in whole ABI encoded message
         uint256 free = 0; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
         // Determine the length of the encoded data
-        for (uint256 i = 0; i < 7; i++) {
+        for (uint256 i = 0; i < 32; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
@@ -53,7 +53,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i = 0; i < 7; i++) {
+        for (uint256 i = 0; i < 32; i++) {
             uint8 idx = uint8(indices[i]);
             if (idx == END_OF_ARGS) break;
 
@@ -105,7 +105,10 @@ library CommandBuilder {
                 assembly {
                     argptr := mload(add(output, 32))
                 }
-                require(argptr == 32, "Only one return value permitted");
+                require(
+                    argptr == 32,
+                    "Only one return value permitted (variable)"
+                );
                 bytes memory entry = state[idx & INDEX_MASK];
                 // Only allocate new memory if we have to
                 if (entry.length < output.length - 32) {
@@ -122,7 +125,10 @@ library CommandBuilder {
             }
         } else {
             // Single word
-            require(output.length == 32, "Only one return value permitted");
+            require(
+                output.length == 32,
+                "Only one return value permitted (static)"
+            );
 
             bytes memory entry = state[idx & INDEX_MASK];
             if (entry.length < 32) {
@@ -136,6 +142,20 @@ library CommandBuilder {
         }
 
         return state;
+    }
+
+    function writeTuple(
+        bytes[] memory state,
+        bytes1 index,
+        bytes memory output
+    ) internal view {
+        uint8 idx = uint8(index);
+        bytes memory entry = state[idx] = new bytes(output.length + 32);
+        memcpy(output, 0, entry, 32, output.length);
+        assembly {
+            let l := mload(output)
+            mstore(add(entry, 32), l)
+        }
     }
 
     function memcpy(
