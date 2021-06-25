@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Planner } from "@weiroll/weiroll.js";
-import { deployLibrary } from "utils/utils";
+import { deployLibrary } from "./utils/utils";
 
 describe("Executor", function () {
   const testString = "Hello, world!";
