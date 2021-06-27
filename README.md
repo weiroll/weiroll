@@ -91,9 +91,9 @@ There are two special values `idx` can equal to which modify the encoder behavio
    └──────┴───────────────────┘
 ```
 
-If `idx` equals `USE_STATE`, then the parameter at that position is constructed by feeding the entire state array into `abi.encode` and passing it to the function as a single argument.
+If `idx` equals `USE_STATE` inside of an 'in' list byte, then the parameter at that position is constructed by feeding the entire state array into `abi.encode` and passing it to the function as a single argument. If it's specified as part of the `o` output target, then the output of that command is written directly to the state instead via `abi.decode`.
 
-The special `idx` value `END_OF_ARGS` indicates the end of the parameter list, no encoding action will be taken, and all further bytes in the list will be ignored. If the first byte in the input list is `END_OF_ARGS`, then the function will be called with no parameters.
+The special `idx` value `END_OF_ARGS` indicates the end of the parameter list, no encoding action will be taken, and all further bytes in the list will be ignored. If the first byte in the input list is `END_OF_ARGS`, then the function will be called with no parameters. If `o` equals `END_OF_ARGS`, then it specifies that the command's return should be ignored.
 
 ### Examples
 
