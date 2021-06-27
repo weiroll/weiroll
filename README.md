@@ -30,6 +30,8 @@ Each command is a `bytes32` containing the following fields (MSB first):
  - `o` is the 1-byte argument specification described below, for the return value
  - `target` is the address to call
 
+### Flags
+
 The 1-byte flags argument `f` has the following field structure:
 
 ```
@@ -61,6 +63,8 @@ The 2-bit `calltype` is treated as a `uint16` that specifies the type of call. T
 
 If `calltype` equals `CALL with value`, then the first argument in the `in` input list is taken to be the amount of ETH that will be supplied to the call, and the rest of the arguments are the arguments to the called function, both processed as described below.
 
+### Input/output list (in/o) format
+
 
 Each 1-byte argument specifier value describes how each input or output argument should be treated, and has the following fields (MSB first):
 
@@ -77,7 +81,19 @@ If `var == 1b`, the indexed value is treated as variable-length, and `idx` is tr
 
 The executor handles the "head" part of ABI-encoding and decoding for variable-length values, so the state elements for these should be the "tail" part of the encoding - for example, a string encodes as a 32 byte length field followed by the string data, padded to a 32-byte boundary, and an array of `uint`s is a 32 byte count followed by the concatenation of all the uints.
 
-The special value `0xff` for an argument specifier indicates that the parameter is not required, and no action should be taken.
+There are two special values `idx` can equal to which modify the encoder behavior, specified in the below table:
+
+```
+   ┌──────┬───────────────────┐
+   │ 0xfe │  USE_STATE        │
+   ├──────┼───────────────────┤
+   │ 0xff │  END_OF_ARGS      │
+   └──────┴───────────────────┘
+```
+
+If `idx` equals `USE_STATE`, then the parameter at that position is constructed by feeding the entire state array into `abi.encode` and passing it to the function as a single argument.
+
+The special `idx` value `END_OF_ARGS` indicates the end of the parameter list, no encoding action will be taken, and all further bytes in the list will be ignored. If the first byte in the input list is `END_OF_ARGS`, then the function will be called with no parameters.
 
 ### Examples
 
