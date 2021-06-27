@@ -132,15 +132,7 @@ library CommandBuilder {
                 "Only one return value permitted (static)"
             );
 
-            bytes memory entry = state[idx & IDX_VALUE_MASK];
-            if (entry.length < 32) {
-                entry = state[idx & IDX_VALUE_MASK] = new bytes(32);
-            }
-            assembly {
-                let word := mload(add(output, 32))
-                mstore(entry, 32)
-                mstore(add(entry, 32), word)
-            }
+            state[idx & IDX_VALUE_MASK] = output;
         }
 
         return state;
