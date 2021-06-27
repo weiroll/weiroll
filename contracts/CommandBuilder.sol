@@ -102,7 +102,6 @@ library CommandBuilder {
                 state = abi.decode(output, (bytes[]));
             } else {
                 // Check the first field is 0x20 (because we have only a single return value)
-                // And copy the rest into state.
                 uint256 argptr;
                 assembly {
                     argptr := mload(add(output, 32))
@@ -111,19 +110,13 @@ library CommandBuilder {
                     argptr == 32,
                     "Only one return value permitted (variable)"
                 );
-                bytes memory entry = state[idx & IDX_VALUE_MASK];
-                // Only allocate new memory if we have to
-                if (entry.length < output.length - 32) {
-                    entry = state[idx & IDX_VALUE_MASK] = new bytes(
-                        output.length - 32
-                    );
-                }
+
                 assembly {
-                    // Set state entry length to output length
-                    mstore(entry, sub(mload(output), 32))
+                    // Overwrite the first word of the return data with the length - 32
+                    mstore(add(output, 32), sub(mload(output), 32))
+                    // Insert a pointer to the return data, starting at the second word, into state
+                    mstore(add(add(state, 32), mul(and(idx, IDX_VALUE_MASK), 32)), add(output, 32))
                 }
-                // Copy the state data over
-                memcpy(output, 32, entry, 0, entry.length);
             }
         } else {
             // Single word
@@ -132,15 +125,7 @@ library CommandBuilder {
                 "Only one return value permitted (static)"
             );
 
-            bytes memory entry = state[idx & IDX_VALUE_MASK];
-            if (entry.length < 32) {
-                entry = state[idx & IDX_VALUE_MASK] = new bytes(32);
-            }
-            assembly {
-                let word := mload(add(output, 32))
-                mstore(entry, 32)
-                mstore(add(entry, 32), word)
-            }
+            state[idx & IDX_VALUE_MASK] = output;
         }
 
         return state;

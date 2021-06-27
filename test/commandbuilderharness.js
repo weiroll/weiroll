@@ -126,7 +126,7 @@ describe("CommandBuilderHarness", function () {
 
     state[1] = ethers.utils.hexDataSlice(output, 32);
 
-    expect(tx).to.deep.equal([state, output]);
+    expect(tx[0]).to.deep.equal(state);
   });
 
 
