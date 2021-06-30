@@ -1,112 +1,151 @@
-pragma solidity ^0.8.4;
-
-import "./CommandBuilder.sol";
-
-uint8 constant FLAG_CT_DELEGATECALL = 0x00;
-uint8 constant FLAG_CT_CALL = 0x01;
-uint8 constant FLAG_CT_STATICCALL = 0x02;
-uint8 constant FLAG_CT_VALUECALL = 0x03;
-uint8 constant FLAG_CT_MASK = 0x03;
-uint8 constant FLAG_EXTENDED_COMMAND = 0x80;
-uint8 constant FLAG_TUPLE_RETURN = 0x40;
-
-uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-
-contract Executor {
-    using CommandBuilder for bytes[];
-
-    address immutable self;
-
-    modifier ensureDelegateCall() {
-        require(address(this) != self);
-        _;
+object "Executor" {
+    code {
+        datacopy(0, dataoffset("runtime"), datasize("runtime"))
+        return(0, datasize("runtime"))
     }
+    object "runtime" {
+        code {
+            mstore(0x20, 0x40)
 
-    constructor() {
-        self = address(this);
-    }
-
-    function execute(bytes32[] calldata commands, bytes[] memory state)
-        public
-        ensureDelegateCall
-        returns (bytes[] memory)
-    {
-        bytes32 command;
-        uint256 flags;
-        bytes32 indices;
-
-        bool success;
-        bytes memory outdata;
-
-        for (uint256 i = 0; i < commands.length; i++) {
-            command = commands[i];
-            flags = uint8(bytes1(command << 32));
-
-            if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
-            } else {
-                indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
+            switch selector()
+            case 0xde792d5f { // execute(bytes32[], bytes[])
+                execute()
+            }
+            default {
+                revert(0, 0)
+            }
+            
+            function selector() -> s {
+                s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
             }
 
-            if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
-                (success, outdata) = address(uint160(uint256(command))) // target
-                .delegatecall(
-                    // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
-                );
-            } else if (flags & FLAG_CT_MASK == FLAG_CT_CALL) {
-                (success, outdata) = address(uint160(uint256(command))).call( // target
-                    // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
-                );
-            } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
-                (success, outdata) = address(uint160(uint256(command))) // target
-                .staticcall(
-                    // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
-                );
-            } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
-                uint256 calleth;
-                bytes memory v = state[uint8(bytes1(indices))];
-                assembly {
-                    mstore(calleth, add(v, 0x20))
+            function require(condition) {
+                if iszero(condition) { revert(0, 0) }
+            }
+            
+            function malloc(amt) -> ptr {
+                amt := mul(div(add(amt, 0x1F), 0x20), 0x20) // Round up to word boundary
+                ptr := mload(0x20)
+                mstore(0x20, add(ptr, amt))
+            }
+            
+            function memcpy(d, s, l) {
+                pop(staticcall(gas(), 4, s, l, d, l))
+            }
+            
+            function loadCalldataBytes(cdp) -> mp {
+                let dataLen := calldataload(cdp)
+                mp := malloc(add(dataLen, 0x20))
+                calldatacopy(mp, cdp, add(dataLen, 0x20))
+            }
+            
+            function loadCalldataBytesArray(basePtr) -> statePtr {
+                let stateLen := calldataload(basePtr)
+                statePtr := malloc(mul(add(stateLen, 1), 0x20))
+                mstore(statePtr, stateLen)
+                for { let mp := statePtr let cdp := basePtr } gt(stateLen, 0) { stateLen := sub(stateLen, 1) } {
+                    mp := add(mp, 0x20)
+                    cdp := add(cdp, 0x20)
+                    mstore(mp, loadCalldataBytes(add(add(basePtr, 0x20), calldataload(cdp))))
                 }
-                (success, outdata) = address(uint160(uint256(command))).call{ // target
-                    value: calleth
-                }(
-                    // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        bytes32(uint256(indices << 8) | IDX_END_OF_ARGS)
-                    )
-                );
-            } else {
-                revert("Invalid calltype");
             }
-
-            require(success, "Call failed");
-
-            if (
-                flags & FLAG_TUPLE_RETURN != 0
-            ) {
-                state.writeTuple(bytes1(command << 88), outdata);
-            } else {
-                state = state.writeOutputs(bytes1(command << 88), outdata);
+            
+            function getInputLength(statePtr, indices) -> headlen {
+                headlen := 0
+                for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
+                    let idx := and(shr(sub(248, mul(i, 8)), indices), 0xFF)
+                    if eq(idx, 0xFF) {
+                        break
+                    }
+                    headlen := add(headlen, 32)
+                }
+            }
+            
+            function buildInputs(statePtr, sel, indices) -> inptr, insize {
+                let headlen := getInputLength(statePtr, indices)
+                inptr := mload(0x20)
+                mstore(inptr, sel)
+                
+                let head := 0
+                let tail := headlen
+                for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
+                    let idx := and(shr(sub(248, mul(i, 8)), indices), 0xFF)
+                    if eq(idx, 0xFF) {
+                        break
+                    }
+                    switch and(idx, 0x80)
+                    case 0x80 {
+                        idx := and(idx, 0x7F)
+                        let argptr := mload(add(statePtr, mul(add(idx, 1), 0x20)))
+                        let arglen := mload(argptr)
+                        mstore(add(add(inptr, head), 4), tail)
+                        head := add(head, 0x20)
+                        memcpy(add(add(inptr, tail), 4), add(argptr, 0x20), arglen)
+                        tail := add(tail, arglen)
+                    }
+                    default {
+                        let argptr := mload(add(statePtr, mul(add(idx, 1), 0x20)))
+                        mstore(add(add(inptr, head), 4), mload(add(argptr, 0x20)))
+                        head := add(head, 0x20)
+                    }
+                }
+                insize := add(tail, 4)
+            }
+            
+            function writeOutput(index, statePtr) {
+                if eq(index, 0xFF) {
+                    leave
+                }
+                switch and(index, 0x80)
+                case 0x80 {
+                    index := and(index, 0x7F)
+                    let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
+                    let argptr := mload(argptrptr)
+                    if lt(mload(argptr), sub(returndatasize(), 0x20)) {
+                        argptr := malloc(returndatasize())
+                        mstore(argptrptr, argptr)
+                    }
+                    returndatacopy(argptr, 0, returndatasize())
+                    require(eq(mload(argptr), 0x20))
+                    mstore(argptr, sub(returndatasize(), 0x20))
+                }
+                default {
+                    require(eq(returndatasize(), 0x20))
+                    let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
+                    let argptr := mload(argptrptr)
+                    if lt(mload(argptr), 0x20) {
+                        argptr := malloc(0x40)
+                        mstore(argptrptr, argptr)
+                    }
+                    mstore(argptr, 0x20)
+                    returndatacopy(add(argptr, 0x20), 0, 0x20)
+                }
+            }
+            
+            function executeCommand(statePtr, command, indices) {
+                let flags := and(shr(216, command), 0xff)
+                let sel := and(command, 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
+                let inptr, insize := buildInputs(statePtr, sel, indices)
+                let result := delegatecall(gas(), and(command, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF), inptr, insize, 0, 0)
+                require(result)
+                writeOutput(and(shr(160, command), 0xFF), statePtr)
+            }
+            
+            function execute() {
+                let statePtr := loadCalldataBytesArray(add(calldataload(0x24), 4))
+                let commandPtr := add(calldataload(0x4), 4)
+                for { let commandLen := calldataload(commandPtr) } gt(commandLen, 0) { commandLen := sub(commandLen, 1) } {
+                    commandPtr := add(commandPtr, 0x20)
+                    let command := calldataload(commandPtr)
+                    let indices := or(shl(40, command), 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                    if and(command, 0x0000000080000000000000000000000000000000000000000000000000000000) {
+                        commandPtr := add(commandPtr, 0x20)
+                        commandLen := sub(commandLen, 1)
+                        indices := calldataload(commandPtr)
+                    }
+                    executeCommand(statePtr, command, indices)
+                }
             }
         }
-        return state;
     }
 }
