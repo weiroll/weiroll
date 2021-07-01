@@ -17,7 +17,9 @@ contract CommandBuilderHarness {
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) public view returns (bytes[] memory, bytes memory) {return (state, new bytes(32));}
+    ) public view returns (bytes[] memory, bytes memory) {
+        return (state, new bytes(32));
+    }
 
     function testBuildInputs(
         bytes[] memory state,
