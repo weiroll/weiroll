@@ -11,7 +11,7 @@ async function deployLibrary(name) {
 describe("Executor", function () {
   const testString = "Hello, world!";
 
-  let events, executor, math, strings, stateTest;
+  let events, executor, executorLibrary, math, strings, stateTest;
   let eventsContract;
 
   before(async () => {
@@ -25,7 +25,7 @@ describe("Executor", function () {
     stateTest = await StateTest.deploy();
 
     const ExecutorLibrary = await ethers.getContractFactory("Executor");
-    const executorLibrary = await ExecutorLibrary.deploy();
+    executorLibrary = await ExecutorLibrary.deploy();
 
     const Executor = await ethers.getContractFactory("TestableExecutor");
     executor = await Executor.deploy(executorLibrary.address);
@@ -51,6 +51,10 @@ describe("Executor", function () {
       }
   }
 
+  it("Should not allow direct calls", async () => {
+    await expect(executorLibrary.execute([], [])).to.be.reverted;
+    await executor.execute([], []); // Expect the wrapped one to not revert with same arguments
+  })
   
   it("Should execute a simple addition program", async () => {
     const planner = new weiroll.Planner();

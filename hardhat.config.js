@@ -71,6 +71,10 @@ module.exports = {
       "contracts/Executor.sol": {
         version: "0.8.4",
         settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100000,
+          },
           language: "Yul"
         }
       }

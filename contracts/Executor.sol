@@ -1,11 +1,16 @@
 object "Executor" {
     code {
         datacopy(0, dataoffset("runtime"), datasize("runtime"))
+        setimmutable(0, "addr", address())
         return(0, datasize("runtime"))
     }
     object "runtime" {
         code {
-            mstore(0x20, 0x40)
+            if eq(loadimmutable("addr"), address()) {
+                revert(0, 0)
+            }
+
+            mstore(0x20, memoryguard(0x40))
 
             switch selector()
             case 0xde792d5f { // execute(bytes32[], bytes[])
@@ -16,7 +21,7 @@ object "Executor" {
             }
             
             function selector() -> s {
-                s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+                s := shr(224, calldataload(0))
             }
 
             function require(condition) {
