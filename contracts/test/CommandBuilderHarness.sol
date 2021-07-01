@@ -10,7 +10,7 @@ contract CommandBuilderHarness {
     function testBuildInputsBaseGas(
         bytes[] memory state,
         bytes4 selector,
-        bytes7 indices
+        bytes32 indices
     ) public view returns (bytes memory out) {}
 
     function testWriteOutputsBaseGas(
@@ -24,7 +24,7 @@ contract CommandBuilderHarness {
     function testBuildInputs(
         bytes[] memory state,
         bytes4 selector,
-        bytes7 indices
+        bytes32 indices
     ) public view returns (bytes memory) {
         bytes memory input = state.buildInputs(selector, indices);
 
