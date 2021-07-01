@@ -99,9 +99,7 @@ contract Executor {
 
             require(success, "Call failed");
 
-            if (
-                flags & FLAG_TUPLE_RETURN != 0
-            ) {
+            if (flags & FLAG_TUPLE_RETURN != 0) {
                 state.writeTuple(bytes1(command << 88), outdata);
             } else {
                 state = state.writeOutputs(bytes1(command << 88), outdata);

@@ -74,7 +74,13 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(state[idx & IDX_VALUE_MASK], 0, ret, free + 4, arglen);
+                    memcpy(
+                        state[idx & IDX_VALUE_MASK],
+                        0,
+                        ret,
+                        free + 4,
+                        arglen
+                    );
                     free += arglen;
                     count += 32;
                 }
@@ -115,7 +121,10 @@ library CommandBuilder {
                     // Overwrite the first word of the return data with the length - 32
                     mstore(add(output, 32), sub(mload(output), 32))
                     // Insert a pointer to the return data, starting at the second word, into state
-                    mstore(add(add(state, 32), mul(and(idx, IDX_VALUE_MASK), 32)), add(output, 32))
+                    mstore(
+                        add(add(state, 32), mul(and(idx, IDX_VALUE_MASK), 32)),
+                        add(output, 32)
+                    )
                 }
             }
         } else {
@@ -137,7 +146,7 @@ library CommandBuilder {
         bytes memory output
     ) internal view {
         uint8 idx = uint8(index);
-        if(idx == IDX_END_OF_ARGS) return;
+        if (idx == IDX_END_OF_ARGS) return;
 
         bytes memory entry = state[idx] = new bytes(output.length + 32);
         memcpy(output, 0, entry, 32, output.length);
