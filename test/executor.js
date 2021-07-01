@@ -13,6 +13,7 @@ describe("Executor", function () {
 
   let events, executor, executorLibrary, math, strings, stateTest;
   let eventsContract;
+  let totalGas = 0;
 
   before(async () => {
     math = await deployLibrary("Math");
@@ -74,7 +75,8 @@ describe("Executor", function () {
       .withArgs(55);
 
     const receipt = await tx.wait();
-    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+    totalGas += receipt.gasUsed.toNumber();
+    console.log(`Fibonacci: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should execute a string length program", async () => {
@@ -90,7 +92,8 @@ describe("Executor", function () {
       .withArgs(13);
 
     const receipt = await tx.wait();
-    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+    totalGas += receipt.gasUsed.toNumber();
+    console.log(`String length: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should concatenate two strings", async () => {
@@ -106,6 +109,7 @@ describe("Executor", function () {
       .withArgs(testString + testString);
 
     const receipt = await tx.wait();
+    totalGas += receipt.gasUsed.toNumber();
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
   });
 
@@ -122,7 +126,8 @@ describe("Executor", function () {
       .withArgs(6);
 
     const receipt = await tx.wait();
-    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+    totalGas += receipt.gasUsed.toNumber();
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should pass and return raw state to functions", async () => {
@@ -149,6 +154,11 @@ describe("Executor", function () {
       .withArgs("0x0000000000000000000000000000000000000000000000000000000000000003");
 
     const receipt = await tx.wait();
+    totalGas += receipt.gasUsed.toNumber();
     console.log(`State passing: ${receipt.gasUsed.toNumber()} gas`);
   });
+
+  after(() => {
+    console.log(`Total gas: ${totalGas}`);
+  })
 });
