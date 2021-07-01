@@ -6,10 +6,12 @@ object "Executor" {
     }
     object "runtime" {
         code {
+            // Prevent non-delegatecalls
             if eq(loadimmutable("addr"), address()) {
                 revert(0, 0)
             }
 
+            // Free memory pointer
             mstore(0x20, memoryguard(0x40))
 
             switch selector()
@@ -28,22 +30,26 @@ object "Executor" {
                 if iszero(condition) { revert(0, 0) }
             }
             
+            // Allocates `amt` bytes of memory and returns a pointer to the first byte
             function malloc(amt) -> ptr {
                 amt := mul(div(add(amt, 0x1F), 0x20), 0x20) // Round up to word boundary
                 ptr := mload(0x20)
                 mstore(0x20, add(ptr, amt))
             }
             
+            // Copies `l` bytes of memory from `s` to `d`
             function memcpy(d, s, l) {
                 pop(staticcall(gas(), 4, s, l, d, l))
             }
             
+            // Loads a `bytes` from calldata at `cdp`, returning a pointer to memory
             function loadCalldataBytes(cdp) -> mp {
                 let dataLen := calldataload(cdp)
                 mp := malloc(add(dataLen, 0x20))
                 calldatacopy(mp, cdp, add(dataLen, 0x20))
             }
             
+            // Loads a `bytes[]` from calldata at `basePtr`, returning a pointer to memory
             function loadCalldataBytesArray(basePtr) -> statePtr {
                 let stateLen := calldataload(basePtr)
                 statePtr := malloc(mul(add(stateLen, 1), 0x20))
@@ -55,7 +61,9 @@ object "Executor" {
                 }
             }
             
-            function getInputLength(statePtr, indices) -> headlen {
+            // Scans an array of indices, returning the number of words required for the 'head'
+            // part of ABI encoding.
+            function getInputLength(indices) -> headlen {
                 headlen := 0
                 for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
                     let idx := and(shr(sub(248, mul(i, 8)), indices), 0xFF)
@@ -66,8 +74,9 @@ object "Executor" {
                 }
             }
             
+            // ABI-encodes a set of function inputs, returning a memory pointer and size
             function buildInputs(statePtr, sel, indices) -> inptr, insize {
-                let headlen := getInputLength(statePtr, indices)
+                let headlen := getInputLength(indices)
                 inptr := mload(0x20)
                 mstore(inptr, sel)
                 
@@ -97,6 +106,7 @@ object "Executor" {
                 insize := add(tail, 4)
             }
             
+            // Updates the state with return data from the last call
             function writeOutput(index, statePtr) {
                 if eq(index, 0xFF) {
                     leave
@@ -127,6 +137,7 @@ object "Executor" {
                 }
             }
             
+            // Executes a single command against the current state
             function executeCommand(statePtr, command, indices) {
                 let flags := and(shr(216, command), 0xff)
                 let sel := and(command, 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
@@ -136,6 +147,7 @@ object "Executor" {
                 writeOutput(and(shr(160, command), 0xFF), statePtr)
             }
             
+            // Implements `execute(bytes32[] calldata commands, bytes[] calldata state)`
             function execute() {
                 let statePtr := loadCalldataBytesArray(add(calldataload(0x24), 4))
                 let commandPtr := add(calldataload(0x4), 4)
