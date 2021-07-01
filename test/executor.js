@@ -75,8 +75,9 @@ describe("Executor", function () {
       .withArgs(55);
 
     const receipt = await tx.wait();
-    totalGas += receipt.gasUsed.toNumber();
-    console.log(`Fibonacci: ${receipt.gasUsed.toNumber()} gas`);
+    let gas = receipt.gasUsed.toNumber() - 21000;
+    console.log(`Fibonacci: ${gas} gas`);
+    totalGas += gas;
   });
 
   it("Should execute a string length program", async () => {
@@ -92,8 +93,9 @@ describe("Executor", function () {
       .withArgs(13);
 
     const receipt = await tx.wait();
-    totalGas += receipt.gasUsed.toNumber();
-    console.log(`String length: ${receipt.gasUsed.toNumber()} gas`);
+    let gas = receipt.gasUsed.toNumber() - 21000;
+    console.log(`String length: ${gas} gas`);
+    totalGas += gas;
   });
 
   it("Should concatenate two strings", async () => {
@@ -109,8 +111,9 @@ describe("Executor", function () {
       .withArgs(testString + testString);
 
     const receipt = await tx.wait();
-    totalGas += receipt.gasUsed.toNumber();
-    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+    let gas = receipt.gasUsed.toNumber() - 21000;
+    console.log(`String concatenation: ${gas} gas`);
+    totalGas += gas;
   });
 
   it("Should sum an array of uints", async () => {
@@ -126,8 +129,9 @@ describe("Executor", function () {
       .withArgs(6);
 
     const receipt = await tx.wait();
-    totalGas += receipt.gasUsed.toNumber();
-    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+    let gas = receipt.gasUsed.toNumber() - 21000;
+    console.log(`Array Sum: ${gas} gas`);
+    totalGas += gas;
   });
 
   it("Should pass and return raw state to functions", async () => {
@@ -154,8 +158,9 @@ describe("Executor", function () {
       .withArgs("0x0000000000000000000000000000000000000000000000000000000000000003");
 
     const receipt = await tx.wait();
-    totalGas += receipt.gasUsed.toNumber();
-    console.log(`State passing: ${receipt.gasUsed.toNumber()} gas`);
+    let gas = receipt.gasUsed.toNumber() - 21000;
+    console.log(`State passing: ${gas} gas`);
+    totalGas += gas;
   });
 
   after(() => {
