@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const {expect} = require("chai");
+const {ethers} = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
 
 async function deployLibrary(name) {
@@ -17,7 +17,7 @@ describe("Executor", function () {
   before(async () => {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
-    
+
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.fromEthersContract(eventsContract);
 
@@ -43,19 +43,19 @@ describe("Executor", function () {
     return executor.execute(encodedCommands, state);
   }
 
-  function tempCommandPatch(commands){
-      let i = 0;
-      for (i = 0; i < commands.length; i++){
-          command = commands[i]
-          commands[i] = command.slice(0, 10) + "00" + command.slice(10, 22)  + command.slice(24)
-      }
+  function tempCommandPatch(commands) {
+    let i = 0;
+    for (i = 0; i < commands.length; i++) {
+      command = commands[i]
+      commands[i] = command.slice(0, 10) + "00" + command.slice(10, 22) + command.slice(24)
+    }
   }
 
-  
+
   it("Should execute a simple addition program", async () => {
     const planner = new weiroll.Planner();
     let a = 1, b = 1;
-    for(let i = 0; i < 8; i++) {
+    for (let i = 0; i < 8; i++) {
       const ret = planner.addCommand(math.add(a, b));
       a = b;
       b = ret;

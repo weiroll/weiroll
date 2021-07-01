@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const {expect} = require("chai");
+const {ethers} = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
 
 async function deployLibrary(name) {
@@ -18,7 +18,7 @@ describe("Executor", function () {
 
   before(async () => {
     erc20 = await deployLibrary("LibERC20");
-    
+
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.fromEthersContract(eventsContract);
 
@@ -48,7 +48,7 @@ describe("Executor", function () {
     );
     return executor.execute(encodedCommands, state);
   }
-  
+
 
   it("Should perform an ERC20 transfer", async () => {
     const planner = new weiroll.Planner();
@@ -60,7 +60,7 @@ describe("Executor", function () {
 
     const {commands, state} = planner.plan();
 
-    commands[0] = commands[0].slice(0, 10) + "00" + commands[0].slice(10, 22)  + commands[0].slice(24)
+    commands[0] = commands[0].slice(0, 10) + "00" + commands[0].slice(10, 22) + commands[0].slice(24)
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -82,7 +82,7 @@ describe("Executor", function () {
     ];
     const state = [
       // dest slot index
-      "0x000000000000000000000000" + to.slice(2) ,
+      "0x000000000000000000000000" + to.slice(2),
       // amt slot index
       ethers.utils.hexZeroPad("0x01", 32),
       // ret slot index

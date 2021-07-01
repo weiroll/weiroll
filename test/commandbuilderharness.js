@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const {expect} = require("chai");
+const {ethers} = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
 
 async function deployLibrary(name) {
@@ -22,18 +22,18 @@ describe("CommandBuilderHarness", function () {
     strings = await deployLibrary("Strings");
   });
 
-  async function executeBuildInputs(commands, state, abiout, msg){
+  async function executeBuildInputs(commands, state, abiout, msg) {
     for (let c of commands) {
-        selector = ethers.utils.hexDataSlice(c, 0, 4);
-        indices = ethers.utils.hexDataSlice(c, 4, 4+7);
-        target = ethers.utils.hexDataSlice(c, 4+7);
-        const txBaseGasNoArgs = await cbh.estimateGas.basecall();
-        const txBaseGas = await cbh.estimateGas.testBuildInputsBaseGas(state, selector, indices);
-        const txGas = await cbh.estimateGas.testBuildInputs(state, selector, indices);
-        console.log(`buildInputs gas cost: ${txGas.sub(txBaseGas).toString()} - argument passing cost: ${txBaseGas.sub(txBaseGasNoArgs).toNumber()} - total: ${txGas.toNumber()}`)
-        const tx = await cbh.testBuildInputs(state, selector, indices);
-        expect(tx).to.equal(selector + abiout.slice(2));
-        // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
+      selector = ethers.utils.hexDataSlice(c, 0, 4);
+      indices = ethers.utils.hexDataSlice(c, 4, 4 + 7);
+      target = ethers.utils.hexDataSlice(c, 4 + 7);
+      const txBaseGasNoArgs = await cbh.estimateGas.basecall();
+      const txBaseGas = await cbh.estimateGas.testBuildInputsBaseGas(state, selector, indices);
+      const txGas = await cbh.estimateGas.testBuildInputs(state, selector, indices);
+      console.log(`buildInputs gas cost: ${txGas.sub(txBaseGas).toString()} - argument passing cost: ${txBaseGas.sub(txBaseGasNoArgs).toNumber()} - total: ${txGas.toNumber()}`)
+      const tx = await cbh.testBuildInputs(state, selector, indices);
+      expect(tx).to.equal(selector + abiout.slice(2));
+      // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
     }
   }
 
@@ -92,7 +92,7 @@ describe("CommandBuilderHarness", function () {
       "0x1111111111111111111111111111111111111111111111111111111111111111",
       "0x2222222222222222222222222222222222222222222222222222222222222222"
     ];
-    
+
     let index = "0x00";
 
     let output = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -114,9 +114,9 @@ describe("CommandBuilderHarness", function () {
       "0x1111111111111111111111111111111111111111111111111111111111111111",
       "0x2222222222222222222222222222222222222222222222222222222222222222"
     ];
-    
+
     let index = "0x81";
-    
+
     let output = abi.encode(["uint[]"], [[1, 2, 3]]);
 
     const txBaseGas = await cbh.estimateGas.testWriteOutputsBaseGas(state, index, output);
@@ -137,7 +137,7 @@ describe("CommandBuilderHarness", function () {
       "0x1111111111111111111111111111111111111111111111111111111111111111",
       "0x2222222222222222222222222222222222222222222222222222222222222222"
     ];
-    
+
     let index = "0xfe";
 
     let precoded = ["0x11", "0x22", "0x33"];

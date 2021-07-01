@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const {expect} = require("chai");
+const {ethers} = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
 
 async function deployLibrary(name) {
@@ -38,12 +38,12 @@ describe("Executor", function () {
     );
     return executor.execute(encodedCommands, state);
   }
-  
+
   it("Should perform a tuple return that's sliced before being fed to another function (first var)", async () => {
 
     const commands = [
-      [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"],
-      [tupler,      "extractElement","0x008001ffffffff", "0x00"],
+      [multiReturn, "intTuple", "0x40ffffffffffff", "0x00"],
+      [tupler, "extractElement", "0x008001ffffffff", "0x00"],
       [multiReturn, "tupleConsumer", "0x0000ffffffffff", "0xff"]
     ];
 
@@ -57,7 +57,7 @@ describe("Executor", function () {
 
     await expect(tx)
       .to.emit(multiReturn.attach(executor.address), "Calculated")
-      .withArgs(0xbad); 
+      .withArgs(0xbad);
 
     const receipt = await tx.wait();
     console.log(`Tuple return+slice: ${receipt.gasUsed.toNumber()} gas`);
@@ -66,8 +66,8 @@ describe("Executor", function () {
   it("Should perform a tuple return that's sliced before being fed to another function (second var)", async () => {
 
     const commands = [
-      [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"],
-      [tupler,      "extractElement","0x008001ffffffff", "0x00"],
+      [multiReturn, "intTuple", "0x40ffffffffffff", "0x00"],
+      [tupler, "extractElement", "0x008001ffffffff", "0x00"],
       [multiReturn, "tupleConsumer", "0x0000ffffffffff", "0xff"]
     ];
 
@@ -82,7 +82,7 @@ describe("Executor", function () {
 
     await expect(tx)
       .to.emit(multiReturn.attach(executor.address), "Calculated")
-      .withArgs(0xdeed); 
+      .withArgs(0xdeed);
 
     const receipt = await tx.wait();
     console.log(`Tuple return+slice: ${receipt.gasUsed.toNumber()} gas`);
