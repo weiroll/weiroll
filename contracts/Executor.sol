@@ -96,12 +96,13 @@ object "Executor" {
                 // Iterate over each of the indices
                 for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
                     let idx := and(shr(sub(248, mul(i, 8)), indices), 0xFF)
-                    if eq(idx, 0xFF) {
-                        break
-                    }
                     switch and(idx, 0x80)
                     // Variable-length argument
                     case 0x80 {
+                        if eq(idx, 0xFF) {
+                            break
+                        }
+
                         idx := and(idx, 0x7F)
                         // Get the location of the argument in state, and its length
                         let argptr := getStateSlot(statePtr, idx, 0)
@@ -127,12 +128,13 @@ object "Executor" {
             
             // Updates the state with return data from the last call
             function writeOutput(index, statePtr) {
-                if eq(index, 0xFF) {
-                    leave
-                }
                 switch and(index, 0x80)
                 // Variable length return value
                 case 0x80 {
+                    if eq(index, 0xFF) {
+                        leave
+                    }
+
                     index := and(index, 0x7F)
                     let argptr := getStateSlot(statePtr, index, sub(returndatasize(), 20))
                     // Copy the return data to the state variable
