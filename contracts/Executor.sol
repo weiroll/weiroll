@@ -80,25 +80,33 @@ object "Executor" {
                 inptr := mload(0x20)
                 mstore(inptr, sel)
                 
-                let head := 0
-                let tail := headlen
+                let head := 0 // Offset of the head part of ABI encoding we're up to
+                let tail := headlen // Offset of the tail part of ABI encoding we're up to
+                // Iterate over each of the indices
                 for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
                     let idx := and(shr(sub(248, mul(i, 8)), indices), 0xFF)
                     if eq(idx, 0xFF) {
                         break
                     }
                     switch and(idx, 0x80)
+                    // Variable-length argument
                     case 0x80 {
                         idx := and(idx, 0x7F)
+                        // Get the location of the argument in state, and its length
                         let argptr := mload(add(statePtr, mul(add(idx, 1), 0x20)))
                         let arglen := mload(argptr)
+                        // Write a pointer to the argument in the tail part
                         mstore(add(add(inptr, head), 4), tail)
                         head := add(head, 0x20)
+                        // Write the argument to the tail part
                         memcpy(add(add(inptr, tail), 4), add(argptr, 0x20), arglen)
                         tail := add(tail, arglen)
                     }
+                    // Word-sized argument
                     default {
+                        // Get the location of the argument in state
                         let argptr := mload(add(statePtr, mul(add(idx, 1), 0x20)))
+                        // Write the value to the head part
                         mstore(add(add(inptr, head), 4), mload(add(argptr, 0x20)))
                         head := add(head, 0x20)
                     }
@@ -112,26 +120,38 @@ object "Executor" {
                     leave
                 }
                 switch and(index, 0x80)
+                // Variable length return value
                 case 0x80 {
                     index := and(index, 0x7F)
+                    // The memory address of the pointer to the state entry
                     let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
+                    // The memory address of the state entry
                     let argptr := mload(argptrptr)
+                    // Check if we need to allocate a new, longer block of memory for this
                     if lt(mload(argptr), sub(returndatasize(), 0x20)) {
                         argptr := malloc(returndatasize())
                         mstore(argptrptr, argptr)
                     }
+                    // Copy the return data to the state variable
                     returndatacopy(argptr, 0, returndatasize())
+                    // Check the first word of the return data is a pointer
                     require(eq(mload(argptr), 0x20))
+                    // Overwrite the first word with the length of the return data
                     mstore(argptr, sub(returndatasize(), 0x20))
                 }
+                // Word-sized return value
                 default {
+                    // Require the return value to be one word long
                     require(eq(returndatasize(), 0x20))
+                    // The memory address of the pointer to the state entry
                     let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
                     let argptr := mload(argptrptr)
+                    // Check if we need to allocate a new, longer block of memory for this
                     if lt(mload(argptr), 0x20) {
                         argptr := malloc(0x40)
                         mstore(argptrptr, argptr)
                     }
+                    // Copy the return data to the state variable
                     mstore(argptr, 0x20)
                     returndatacopy(add(argptr, 0x20), 0, 0x20)
                 }
@@ -139,21 +159,31 @@ object "Executor" {
             
             // Executes a single command against the current state
             function executeCommand(statePtr, command, indices) {
+                // Decode the flags
                 let flags := and(shr(216, command), 0xff)
+                // Decode the function selector
                 let sel := and(command, 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
+                // Build the command inputs
                 let inptr, insize := buildInputs(statePtr, sel, indices)
+                // Make the call
                 let result := delegatecall(gas(), and(command, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF), inptr, insize, 0, 0)
                 require(result)
+                // Write the output back to the state
                 writeOutput(and(shr(160, command), 0xFF), statePtr)
             }
             
             // Implements `execute(bytes32[] calldata commands, bytes[] calldata state)`
             function execute() {
+                // Load the state into memory
                 let statePtr := loadCalldataBytesArray(add(calldataload(0x24), 4))
+
+                // Iterate over the commands
                 let commandPtr := add(calldataload(0x4), 4)
                 for { let commandLen := calldataload(commandPtr) } gt(commandLen, 0) { commandLen := sub(commandLen, 1) } {
                     commandPtr := add(commandPtr, 0x20)
+                    // Load the command
                     let command := calldataload(commandPtr)
+                    // Unpack the indices from the current command, or the next one if this is an extended command
                     let indices := or(shl(40, command), 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                     if and(command, 0x0000000080000000000000000000000000000000000000000000000000000000) {
                         commandPtr := add(commandPtr, 0x20)
