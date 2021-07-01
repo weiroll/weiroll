@@ -73,6 +73,17 @@ object "Executor" {
                     headlen := add(headlen, 32)
                 }
             }
+
+            // Returns a pointer to a state variable, allocating it if necessary
+            // The returned value points to the word containing the length of the slot
+            function getStateSlot(statePtr, index, len) -> argptr {
+                let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
+                argptr := mload(argptrptr)
+                if lt(mload(argptr), len) {
+                    argptr := malloc(add(len, 0x20))
+                    mstore(argptrptr, argptr)
+                }
+            }
             
             // ABI-encodes a set of function inputs, returning a memory pointer and size
             function buildInputs(statePtr, sel, indices) -> inptr, insize {
@@ -93,7 +104,7 @@ object "Executor" {
                     case 0x80 {
                         idx := and(idx, 0x7F)
                         // Get the location of the argument in state, and its length
-                        let argptr := mload(add(statePtr, mul(add(idx, 1), 0x20)))
+                        let argptr := getStateSlot(statePtr, idx, 0)
                         let arglen := mload(argptr)
                         // Write a pointer to the argument in the tail part
                         mstore(add(add(inptr, head), 4), tail)
@@ -105,7 +116,7 @@ object "Executor" {
                     // Word-sized argument
                     default {
                         // Get the location of the argument in state
-                        let argptr := mload(add(statePtr, mul(add(idx, 1), 0x20)))
+                        let argptr := getStateSlot(statePtr, idx, 0)
                         // Write the value to the head part
                         mstore(add(add(inptr, head), 4), mload(add(argptr, 0x20)))
                         head := add(head, 0x20)
@@ -123,15 +134,7 @@ object "Executor" {
                 // Variable length return value
                 case 0x80 {
                     index := and(index, 0x7F)
-                    // The memory address of the pointer to the state entry
-                    let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
-                    // The memory address of the state entry
-                    let argptr := mload(argptrptr)
-                    // Check if we need to allocate a new, longer block of memory for this
-                    if lt(mload(argptr), sub(returndatasize(), 0x20)) {
-                        argptr := malloc(returndatasize())
-                        mstore(argptrptr, argptr)
-                    }
+                    let argptr := getStateSlot(statePtr, index, sub(returndatasize(), 20))
                     // Copy the return data to the state variable
                     returndatacopy(argptr, 0, returndatasize())
                     // Check the first word of the return data is a pointer
@@ -143,14 +146,7 @@ object "Executor" {
                 default {
                     // Require the return value to be one word long
                     require(eq(returndatasize(), 0x20))
-                    // The memory address of the pointer to the state entry
-                    let argptrptr := add(statePtr, mul(add(index, 1), 0x20))
-                    let argptr := mload(argptrptr)
-                    // Check if we need to allocate a new, longer block of memory for this
-                    if lt(mload(argptr), 0x20) {
-                        argptr := malloc(0x40)
-                        mstore(argptrptr, argptr)
-                    }
+                    let argptr := getStateSlot(statePtr, index, 0x20)
                     // Copy the return data to the state variable
                     mstore(argptr, 0x20)
                     returndatacopy(add(argptr, 0x20), 0, 0x20)
