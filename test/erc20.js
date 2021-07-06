@@ -10,7 +10,7 @@ async function deployLibrary(name) {
 
 describe("ERC20", function () {
 
-  let events, executor, erc20;
+  let events, vm, erc20;
   let eventsContract;
   let supply = ethers.BigNumber.from("100000000000000000000");
   let amount = supply.div(10);
@@ -25,16 +25,16 @@ describe("ERC20", function () {
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
 
-    const ExecutorLibrary = await ethers.getContractFactory("Executor");
-    const executorLibrary = await ExecutorLibrary.deploy();
+    const VMLibrary = await ethers.getContractFactory("VM");
+    const vmLibrary = await VMLibrary.deploy();
 
-    const Executor = await ethers.getContractFactory("TestableExecutor");
-    executor = await Executor.deploy(executorLibrary.address);
+    const VM = await ethers.getContractFactory("TestableVM");
+    vm = await VM.deploy(vmLibrary.address);
 
-    /* transfer some balance to executor */
-    let ttx = await tokenContract.transfer(executor.address, amount.mul(3));
+    /* transfer some balance to vm */
+    let ttx = await tokenContract.transfer(vm.address, amount.mul(3));
     /* ensure that transfer was successful */
-    await expect(ttx).to.emit(tokenContract, "Transfer").withArgs(selfAddr, executor.address, amount.mul(3));
+    await expect(ttx).to.emit(tokenContract, "Transfer").withArgs(selfAddr, vm.address, amount.mul(3));
   });
 
   function execute(commands, state) {
@@ -46,7 +46,7 @@ describe("ERC20", function () {
         target.address,
       ])
     );
-    return executor.execute(encodedCommands, state);
+    return vm.execute(encodedCommands, state);
   }
   
 
@@ -60,10 +60,10 @@ describe("ERC20", function () {
 
     const {commands, state} = planner.plan();
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
       .to.emit(tokenContract, "Transfer")
-      .withArgs(executor.address, selfAddr, amount);
+      .withArgs(vm.address, selfAddr, amount);
 
     const receipt = await tx.wait();
     console.log(`ERC20 transfer: ${receipt.gasUsed.toNumber()} gas`);
@@ -90,7 +90,7 @@ describe("ERC20", function () {
     const tx = await execute(commands, state);
     await expect(tx)
       .to.emit(tokenContract, "Transfer")
-      .withArgs(executor.address, selfAddr, "0x1");
+      .withArgs(vm.address, selfAddr, "0x1");
 
     const receipt = await tx.wait();
     console.log(`Direct ERC20 transfer: ${receipt.gasUsed.toNumber()} gas`);

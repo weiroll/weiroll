@@ -8,10 +8,10 @@ async function deployLibrary(name) {
   return weiroll.Contract.createLibrary(contract);
 }
 
-describe("Executor", function () {
+describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, executor, math, strings, stateTest, executorLibrary;
+  let events, vm, math, strings, stateTest, vmLibrary;
   let eventsContract;
 
   before(async () => {
@@ -24,11 +24,11 @@ describe("Executor", function () {
     const StateTest = await ethers.getContractFactory("StateTest");
     stateTest = await StateTest.deploy();
 
-    const ExecutorLibrary = await ethers.getContractFactory("Executor");
-    executorLibrary = await ExecutorLibrary.deploy();
+    const VMLibrary = await ethers.getContractFactory("VM");
+    vmLibrary = await VMLibrary.deploy();
 
-    const Executor = await ethers.getContractFactory("TestableExecutor");
-    executor = await Executor.deploy(executorLibrary.address);
+    const VM = await ethers.getContractFactory("TestableVM");
+    vm = await VM.deploy(vmLibrary.address);
   });
 
   function execute(commands, state) {
@@ -40,12 +40,12 @@ describe("Executor", function () {
         target.address,
       ])
     );
-    return executor.execute(encodedCommands, state);
+    return vm.execute(encodedCommands, state);
   }
 
   it("Should not allow direct calls", async () => {
-    await expect(executorLibrary.execute([], [])).to.be.reverted;
-    await executor.execute([], []); // Expect the wrapped one to not revert with same arguments
+    await expect(vmLibrary.execute([], [])).to.be.reverted;
+    await vm.execute([], []); // Expect the wrapped one to not revert with same arguments
   })
   
   it("Should execute a simple addition program", async () => {
@@ -59,9 +59,9 @@ describe("Executor", function () {
     planner.add(events.logUint(b));
     const {commands, state} = planner.plan();
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(55);
 
     const receipt = await tx.wait();
@@ -74,9 +74,9 @@ describe("Executor", function () {
     planner.add(events.logUint(len));
     const {commands, state} = planner.plan();
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(13);
 
     const receipt = await tx.wait();
@@ -89,9 +89,9 @@ describe("Executor", function () {
     planner.add(events.logString(result));
     const {commands, state} = planner.plan();
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogString")
+      .to.emit(eventsContract.attach(vm.address), "LogString")
       .withArgs(testString + testString);
 
     const receipt = await tx.wait();
@@ -104,9 +104,9 @@ describe("Executor", function () {
     planner.add(events.logUint(result));
     const {commands, state} = planner.plan();
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(6);
 
     const receipt = await tx.wait();
@@ -133,7 +133,7 @@ describe("Executor", function () {
 
     const tx = await execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs("0x0000000000000000000000000000000000000000000000000000000000000003");
 
     const receipt = await tx.wait();

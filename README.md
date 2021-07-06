@@ -79,7 +79,7 @@ The `var` flag indicates if the indexed value should be treated as fixed- or var
 
 If `var == 1b`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long.
 
-The executor handles the "head" part of ABI-encoding and decoding for variable-length values, so the state elements for these should be the "tail" part of the encoding - for example, a string encodes as a 32 byte length field followed by the string data, padded to a 32-byte boundary, and an array of `uint`s is a 32 byte count followed by the concatenation of all the uints.
+The vm handles the "head" part of ABI-encoding and decoding for variable-length values, so the state elements for these should be the "tail" part of the encoding - for example, a string encodes as a 32 byte length field followed by the string data, padded to a 32-byte boundary, and an array of `uint`s is a 32 byte count followed by the concatenation of all the uints.
 
 There are two special values `idx` can equal to which modify the encoder behavior, specified in the below table:
 
@@ -138,11 +138,11 @@ Command decoding is straightforward and described above in "Command structure".
 
 ### Input encoding
 
-Input arguments must be collected from the state and assembled into a valid ABI-encoded string to be passed to the function being called. The executor allocates an array large enough to store the input data. Observing the `var` flag on each input argument specifier, it then either copies the value directly from the relevant state index to the input array, or writes out a pointer to the value, and appends the value to the array. The result is a valid ABI-encoded byte string. The function selector is inserted at the beginning of the input data in this stage.
+Input arguments must be collected from the state and assembled into a valid ABI-encoded string to be passed to the function being called. The vm allocates an array large enough to store the input data. Observing the `var` flag on each input argument specifier, it then either copies the value directly from the relevant state index to the input array, or writes out a pointer to the value, and appends the value to the array. The result is a valid ABI-encoded byte string. The function selector is inserted at the beginning of the input data in this stage.
 
 ### Call
 
-Next, the executor calls the target contract with the encoded input data. A `delegatecall` is normally used for executor library contracts, meaning the execution takes place in the executor's context rather than the contract's own, and a normal `call` is used for calling out to external contracts directly (like to an `ERC20.transfer` function). The intention is that users of the executor will themselves `delegatecall` it, meaning that all operations take place in the user's contract's context, or will seem to come directly from a user's contract address for external calls.
+Next, the vm calls the target contract with the encoded input data. A `delegatecall` is normally used for vm library contracts, meaning the execution takes place in the vm's context rather than the contract's own, and a normal `call` is used for calling out to external contracts directly (like to an `ERC20.transfer` function). The intention is that users of the executor will themselves `delegatecall` it, meaning that all operations take place in the user's contract's context, or will seem to come directly from a user's contract address for external calls.
 
 ### Output decoding
 
