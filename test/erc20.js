@@ -5,10 +5,10 @@ const weiroll = require("@weiroll/weiroll.js");
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);
   const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
+  return weiroll.Contract.createLibrary(contract);
 }
 
-describe("Executor", function () {
+describe("ERC20", function () {
 
   let events, executor, erc20;
   let eventsContract;
@@ -20,7 +20,7 @@ describe("Executor", function () {
     erc20 = await deployLibrary("LibERC20");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.fromEthersContract(eventsContract);
+    events = weiroll.Contract.createLibrary(eventsContract);
 
     /* Deploy token contract */
     tokenContract = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
@@ -56,11 +56,9 @@ describe("Executor", function () {
     let token = tokenContract.address;
     let to = selfAddr;
 
-    planner.addCommand(erc20.transfer(token, to, amount));
+    planner.add(erc20.transfer(token, to, amount));
 
     const {commands, state} = planner.plan();
-
-    commands[0] = commands[0].slice(0, 10) + "00" + commands[0].slice(10, 22)  + commands[0].slice(24)
 
     const tx = await executor.execute(commands, state);
     await expect(tx)

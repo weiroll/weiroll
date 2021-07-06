@@ -5,7 +5,7 @@ const weiroll = require("@weiroll/weiroll.js");
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);
   const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
+  return weiroll.Contract.createLibrary(contract);
 }
 
 describe("Executor", function () {
@@ -20,7 +20,7 @@ describe("Executor", function () {
     strings = await deployLibrary("Strings");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.fromEthersContract(eventsContract);
+    events = weiroll.Contract.createLibrary(eventsContract);
 
     const StateTest = await ethers.getContractFactory("StateTest");
     stateTest = await StateTest.deploy();
@@ -44,14 +44,6 @@ describe("Executor", function () {
     return executor.execute(encodedCommands, state);
   }
 
-  function tempCommandPatch(commands){
-      let i = 0;
-      for (i = 0; i < commands.length; i++){
-          command = commands[i]
-          commands[i] = command.slice(0, 10) + "00" + command.slice(10, 22)  + command.slice(24)
-      }
-  }
-
   it("Should not allow direct calls", async () => {
     await expect(executorLibrary.execute([], [])).to.be.reverted;
     await executor.execute([], []); // Expect the wrapped one to not revert with same arguments
@@ -61,13 +53,12 @@ describe("Executor", function () {
     const planner = new weiroll.Planner();
     let a = 1, b = 1;
     for(let i = 0; i < 8; i++) {
-      const ret = planner.addCommand(math.add(a, b));
+      const ret = planner.add(math.add(a, b));
       a = b;
       b = ret;
     }
-    planner.addCommand(events.logUint(b));
+    planner.add(events.logUint(b));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -82,10 +73,9 @@ describe("Executor", function () {
 
   it("Should execute a string length program", async () => {
     const planner = new weiroll.Planner();
-    const len = planner.addCommand(strings.strlen(testString));
-    planner.addCommand(events.logUint(len));
+    const len = planner.add(strings.strlen(testString));
+    planner.add(events.logUint(len));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -100,10 +90,9 @@ describe("Executor", function () {
 
   it("Should concatenate two strings", async () => {
     const planner = new weiroll.Planner();
-    const result = planner.addCommand(strings.strcat(testString, testString));
-    planner.addCommand(events.logString(result));
+    const result = planner.add(strings.strcat(testString, testString));
+    planner.add(events.logString(result));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
@@ -118,10 +107,9 @@ describe("Executor", function () {
 
   it("Should sum an array of uints", async () => {
     const planner = new weiroll.Planner();
-    const result = planner.addCommand(math.sum([1, 2, 3]));
-    planner.addCommand(events.logUint(result));
+    const result = planner.add(math.sum([1, 2, 3]));
+    planner.add(events.logUint(result));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
     const tx = await executor.execute(commands, state);
     await expect(tx)
