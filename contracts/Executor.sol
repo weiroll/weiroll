@@ -154,6 +154,41 @@ object "Executor" {
                     returndatacopy(add(argptr, 0x20), 0, 0x20)
                 }
             }
+
+            function doCall(target, statePtr, sel, indices, flags) {
+                // Build the command inputs
+                let result
+                switch and(flags, 0x03)
+                case 0x00 { // DELEGATECALL
+                    let inptr, insize := buildInputs(statePtr, sel, indices)
+                    result := delegatecall(gas(), target, inptr, insize, 0, 0)
+                }
+                case 0x01 { // CALL
+                    let inptr, insize := buildInputs(statePtr, sel, indices)
+                    result := call(gas(), target, 0, inptr, insize, 0, 0)
+                }
+                case 0x02 { // STATICCALL
+                    let inptr, insize := buildInputs(statePtr, sel, indices)
+                    result := staticcall(gas(), target, inptr, insize, 0, 0)
+                }
+                case 0x03 { // CALL with value
+                    // Get a pointer to the value argument
+                    let validx := shr(248, indices)
+                    // Check it's not a dynamic argument
+                    require(eq(and(validx, 0x80), 0))
+                    let valptr := getStateSlot(statePtr, validx, 0)
+                    // Check it's 32 bytes long
+                    require(eq(mload(valptr), 0x20))
+                    // Read the value
+                    let val := mload(add(valptr, 0x20))
+                    // Remove the value parameter from the indices
+                    indices := or(shl(8, indices), 0xff)
+
+                    let inptr, insize := buildInputs(statePtr, sel, indices)
+                    result := call(gas(), target, val, inptr, insize, 0, 0)
+                }
+                require(result)
+            }
             
             // Executes a single command against the current state
             function executeCommand(statePtr, command, indices) {
@@ -161,11 +196,9 @@ object "Executor" {
                 let flags := and(shr(216, command), 0xff)
                 // Decode the function selector
                 let sel := and(command, 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
-                // Build the command inputs
-                let inptr, insize := buildInputs(statePtr, sel, indices)
                 // Make the call
-                let result := delegatecall(gas(), and(command, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF), inptr, insize, 0, 0)
-                require(result)
+                let target := and(command, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                doCall(target, statePtr, sel, indices, flags)
                 // Write the output back to the state
                 writeOutput(and(shr(160, command), 0xFF), statePtr)
             }
