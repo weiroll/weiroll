@@ -3,17 +3,17 @@ const { ethers } = require("hardhat");
 
 describe("Tuple", function () {
 
-  let executor, multiReturn, tupler;
+  let vm, multiReturn, tupler;
 
   before(async () => {
     multiReturn = await (await ethers.getContractFactory("MultiReturn")).deploy();
     tupler = await (await ethers.getContractFactory("LibTupler")).deploy();
 
-    const ExecutorLibrary = await ethers.getContractFactory("Executor");
-    const executorLibrary = await ExecutorLibrary.deploy();
+    const VMLibrary = await ethers.getContractFactory("VM");
+    const vmLibrary = await VMLibrary.deploy();
 
-    const Executor = await ethers.getContractFactory("TestableExecutor");
-    executor = await Executor.deploy(executorLibrary.address);
+    const VM = await ethers.getContractFactory("TestableVM");
+    vm = await VM.deploy(vmLibrary.address);
   });
 
   function execute(commands, state) {
@@ -25,7 +25,7 @@ describe("Tuple", function () {
         target.address,
       ])
     );
-    return executor.execute(encodedCommands, state);
+    return vm.execute(encodedCommands, state);
   }
   
   it("Should perform a tuple return that's sliced before being fed to another function (first var)", async () => {
@@ -45,7 +45,7 @@ describe("Tuple", function () {
     const tx = await execute(commands, state);
 
     await expect(tx)
-      .to.emit(multiReturn.attach(executor.address), "Calculated")
+      .to.emit(multiReturn.attach(vm.address), "Calculated")
       .withArgs(0xbad); 
 
     const receipt = await tx.wait();
@@ -70,7 +70,7 @@ describe("Tuple", function () {
     const tx = await execute(commands, state);
 
     await expect(tx)
-      .to.emit(multiReturn.attach(executor.address), "Calculated")
+      .to.emit(multiReturn.attach(vm.address), "Calculated")
       .withArgs(0xdeed); 
 
     const receipt = await tx.wait();

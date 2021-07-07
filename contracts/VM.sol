@@ -12,7 +12,7 @@ uint8 constant FLAG_TUPLE_RETURN = 0x40;
 
 uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-contract Executor {
+contract VM {
     using CommandBuilder for bytes[];
 
     address immutable self;
