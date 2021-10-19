@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 uint256 constant IDX_VARIABLE_LENGTH = 0x80;
