@@ -12,6 +12,7 @@ contract TestableVM {
 
     function execute(bytes32[] calldata commands, bytes[] memory state)
         public
+        payable
         returns (bytes[] memory)
     {
         (bool success, bytes memory data) = address(vm).delegatecall(
