@@ -11,12 +11,13 @@ async function deployLibrary(name) {
 describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, vm, math, strings, stateTest, vmLibrary;
+  let events, vm, math, strings, stateTest, sender, vmLibrary;
   let eventsContract;
 
   before(async () => {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
+    sender = await deployLibrary("Sender");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.createLibrary(eventsContract);
@@ -46,6 +47,23 @@ describe("VM", function () {
   it("Should not allow direct calls", async () => {
     await expect(vmLibrary.execute([], [])).to.be.reverted;
     await vm.execute([], []); // Expect the wrapped one to not revert with same arguments
+  })
+
+  it("Should return msg.sender", async () => {
+    const [caller] = await ethers.getSigners();
+    const planner = new weiroll.Planner();
+    const msgSender = planner.add(sender.sender());
+    planner.add(events.logAddress(msgSender));
+
+    const {commands, state} = planner.plan();
+
+    const tx = await vm.execute(commands, state);
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogAddress")
+      .withArgs(caller.address);
+
+    const receipt = await tx.wait();
+    console.log(`Msg.sender: ${receipt.gasUsed.toNumber()} gas`);
   })
   
   it("Should execute a simple addition program", async () => {
