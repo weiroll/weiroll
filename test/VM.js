@@ -161,7 +161,7 @@ describe("VM", function () {
     console.log(`State passing: ${receipt.gasUsed.toNumber()} gas`);
   });
 
-  it("Should perform a DIRECT ERC20 transfer, without using lib", async () => {
+  it("Should perform a ERC20 transfer", async () => {
     let amount = supply.div(10);
     let to = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
