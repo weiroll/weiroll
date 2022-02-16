@@ -5,33 +5,31 @@ const weiroll = require("@weiroll/weiroll.js");
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);
   const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
+  return weiroll.Contract.createLibrary(contract);
 }
 
-describe("Executor", function () {
+describe("VM", function () {
   const testString = "Hello, world!";
-
-  let events, executor, math, strings, stateTest, token;
-  let supply = ethers.BigNumber.from("100000000000000000000");
+  
+  let events, vm, math, strings, stateTest, sender, vmLibrary;
   let eventsContract;
 
   before(async () => {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
+    sender = await deployLibrary("Sender");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.fromEthersContract(eventsContract);
+    events = weiroll.Contract.createLibrary(eventsContract);
 
     const StateTest = await ethers.getContractFactory("StateTest");
     stateTest = await StateTest.deploy();
 
-    const ExecutorLibrary = await ethers.getContractFactory("Executor");
-    const executorLibrary = await ExecutorLibrary.deploy();
-
-    const Executor = await ethers.getContractFactory("TestableExecutor");
-    executor = await Executor.deploy(executorLibrary.address);
-
-    token = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
+    const VMLibrary = await ethers.getContractFactory("VM");
+    vmLibrary = await VMLibrary.deploy();
+    
+    const VM = await ethers.getContractFactory("TestableVM");
+    vm = await VM.deploy(vmLibrary.address);
   });
 
   function execute(commands, state) {
@@ -43,33 +41,45 @@ describe("Executor", function () {
         target.address,
       ])
     );
-    return executor.execute(encodedCommands, state);
+    return vm.execute(encodedCommands, state);
   }
 
-  function tempCommandPatch(commands){
-      let i = 0;
-      for (i = 0; i < commands.length; i++){
-          command = commands[i]
-          commands[i] = command.slice(0, 10) + "00" + command.slice(10, 22)  + command.slice(24)
-      }
-  }
+  it("Should not allow direct calls", async () => {
+    await expect(vmLibrary.execute([], [])).to.be.reverted;
+    await vm.execute([], []); // Expect the wrapped one to not revert with same arguments
+  })
 
+  it("Should return msg.sender", async () => {
+    const [caller] = await ethers.getSigners();
+    const planner = new weiroll.Planner();
+    const msgSender = planner.add(sender.sender());
+    planner.add(events.logAddress(msgSender));
+
+    const {commands, state} = planner.plan();
+
+    const tx = await vm.execute(commands, state);
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogAddress")
+      .withArgs(caller.address);
+
+    const receipt = await tx.wait();
+    console.log(`Msg.sender: ${receipt.gasUsed.toNumber()} gas`);
+  })
   
   it("Should execute a simple addition program", async () => {
     const planner = new weiroll.Planner();
     let a = 1, b = 1;
     for(let i = 0; i < 8; i++) {
-      const ret = planner.addCommand(math.add(a, b));
+      const ret = planner.add(math.add(a, b));
       a = b;
       b = ret;
     }
-    planner.addCommand(events.logUint(b));
+    planner.add(events.logUint(b));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(55);
 
     const receipt = await tx.wait();
@@ -78,14 +88,13 @@ describe("Executor", function () {
 
   it("Should execute a string length program", async () => {
     const planner = new weiroll.Planner();
-    const len = planner.addCommand(strings.strlen(testString));
-    planner.addCommand(events.logUint(len));
+    const len = planner.add(strings.strlen(testString));
+    planner.add(events.logUint(len));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(13);
 
     const receipt = await tx.wait();
@@ -94,14 +103,13 @@ describe("Executor", function () {
 
   it("Should concatenate two strings", async () => {
     const planner = new weiroll.Planner();
-    const result = planner.addCommand(strings.strcat(testString, testString));
-    planner.addCommand(events.logString(result));
+    const result = planner.add(strings.strcat(testString, testString));
+    planner.add(events.logString(result));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogString")
+      .to.emit(eventsContract.attach(vm.address), "LogString")
       .withArgs(testString + testString);
 
     const receipt = await tx.wait();
@@ -110,14 +118,13 @@ describe("Executor", function () {
 
   it("Should sum an array of uints", async () => {
     const planner = new weiroll.Planner();
-    const result = planner.addCommand(math.sum([1, 2, 3]));
-    planner.addCommand(events.logUint(result));
+    const result = planner.add(math.sum([1, 2, 3]));
+    planner.add(events.logUint(result));
     const {commands, state} = planner.plan();
-    tempCommandPatch(commands);
 
-    const tx = await executor.execute(commands, state);
+    const tx = await vm.execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(6);
 
     const receipt = await tx.wait();
@@ -144,7 +151,7 @@ describe("Executor", function () {
 
     const tx = await execute(commands, state);
     await expect(tx)
-      .to.emit(eventsContract.attach(executor.address), "LogUint")
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs("0x0000000000000000000000000000000000000000000000000000000000000003");
 
     const receipt = await tx.wait();

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 import "../CommandBuilder.sol";
@@ -10,19 +11,21 @@ contract CommandBuilderHarness {
     function testBuildInputsBaseGas(
         bytes[] memory state,
         bytes4 selector,
-        bytes7 indices
+        bytes32 indices
     ) public view returns (bytes memory out) {}
 
     function testWriteOutputsBaseGas(
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) public view returns (bytes[] memory, bytes memory) {return (state, new bytes(32));}
+    ) public view returns (bytes[] memory, bytes memory) {
+        return (state, new bytes(32));
+    }
 
     function testBuildInputs(
         bytes[] memory state,
         bytes4 selector,
-        bytes7 indices
+        bytes32 indices
     ) public view returns (bytes memory) {
         bytes memory input = state.buildInputs(selector, indices);
 

@@ -5,10 +5,10 @@ const weiroll = require("@weiroll/weiroll.js");
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);
   const contract = await factory.deploy();
-  return weiroll.Contract.fromEthersContract(contract);
+  return weiroll.Contract.createLibrary(contract);
 }
 
-describe("CommandBuilderHarness", function () {
+describe("CommandBuilder", function () {
   let cbh;
   let math;
   let strings;
@@ -25,15 +25,14 @@ describe("CommandBuilderHarness", function () {
   async function executeBuildInputs(commands, state, abiout, msg){
     for (let c of commands) {
         selector = ethers.utils.hexDataSlice(c, 0, 4);
-        indices = ethers.utils.hexDataSlice(c, 4, 4+7);
-        target = ethers.utils.hexDataSlice(c, 4+7);
+        indices = ethers.utils.hexConcat([ethers.utils.hexDataSlice(c, 5, 5+6), "0xffffffffffffffffffffffffffffffffffffffffffffffffffff"]);
+        target = ethers.utils.hexDataSlice(c, 5+6);
         const txBaseGasNoArgs = await cbh.estimateGas.basecall();
         const txBaseGas = await cbh.estimateGas.testBuildInputsBaseGas(state, selector, indices);
         const txGas = await cbh.estimateGas.testBuildInputs(state, selector, indices);
         console.log(`buildInputs gas cost: ${txGas.sub(txBaseGas).toString()} - argument passing cost: ${txBaseGas.sub(txBaseGasNoArgs).toNumber()} - total: ${txGas.toNumber()}`)
-        const tx = await cbh.testBuildInputs(state, selector, indices);
-        expect(tx).to.equal(selector + abiout.slice(2));
-        // console.log(`buildInputs for ${msg} : ${receipt.gasUsed.toNumber()} gas`);
+        const result = await cbh.testBuildInputs(state, selector, indices);
+        expect(result).to.equal(selector + abiout.slice(2));
     }
   }
 
@@ -44,7 +43,7 @@ describe("CommandBuilderHarness", function () {
 
     abiout = abi.encode(math.interface.getFunction("add").inputs, args);
 
-    planner.addCommand(math.add.apply(this, args));
+    planner.add(math.add(...args));
 
     const {commands, state} = planner.plan();
 
@@ -58,7 +57,7 @@ describe("CommandBuilderHarness", function () {
 
     abiout = abi.encode(strings.interface.getFunction("strcat").inputs, args);
 
-    planner.addCommand(strings.strcat.apply(this, args));
+    planner.add(strings.strcat(...args));
 
     const {commands, state} = planner.plan();
 
@@ -77,7 +76,7 @@ describe("CommandBuilderHarness", function () {
 
     abiout = abi.encode(math.interface.getFunction("sum").inputs, [args]);
 
-    planner.addCommand(math.sum(args));
+    planner.add(math.sum(args));
 
     const {commands, state} = planner.plan();
 

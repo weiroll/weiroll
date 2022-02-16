@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 import "./CommandBuilder.sol";
@@ -12,7 +14,7 @@ uint8 constant FLAG_TUPLE_RETURN = 0x40;
 
 uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-contract Executor {
+contract VM {
     using CommandBuilder for bytes[];
 
     address immutable self;
@@ -99,9 +101,7 @@ contract Executor {
 
             require(success, "Call failed");
 
-            if (
-                flags & FLAG_TUPLE_RETURN != 0
-            ) {
+            if (flags & FLAG_TUPLE_RETURN != 0) {
                 state.writeTuple(bytes1(command << 88), outdata);
             } else {
                 state = state.writeOutputs(bytes1(command << 88), outdata);

@@ -1,13 +1,19 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 contract Events {
     event LogBytes(bytes message);
+    event LogAddress(address message);
     event LogString(string message);
     event LogBytes32(bytes32 message);
     event LogUint(uint256 message);
 
     function logBytes(bytes calldata message) external {
         emit LogBytes(message);
+    }
+
+    function logAddress(address message) external {
+        emit LogAddress(message);
     }
 
     function logString(string calldata message) external {
