@@ -11,7 +11,8 @@ async function deployLibrary(name) {
 describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, vm, math, strings, stateTest, sender, vmLibrary;
+  let events, vm, math, strings, stateTest, sender, vmLibrary, token;
+  let supply = ethers.BigNumber.from("100000000000000000000");
   let eventsContract;
 
   before(async () => {
@@ -30,6 +31,8 @@ describe("VM", function () {
 
     const VM = await ethers.getContractFactory("TestableVM");
     vm = await VM.deploy(vmLibrary.address);
+
+    token = await (await ethers.getContractFactory("ExecutorToken")).deploy(supply);
   });
 
   function execute(commands, state) {
@@ -156,5 +159,35 @@ describe("VM", function () {
 
     const receipt = await tx.wait();
     console.log(`State passing: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should perform a ERC20 transfer", async () => {
+    let amount = supply.div(10);
+    let to = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+
+    /* transfer some balance to executor */
+    let ttx = await token.transfer(vm.address, amount.mul(3));
+    /* ensure that transfer was successful */
+    await expect(ttx).to.emit(token, "Transfer").withArgs(to, vm.address, amount.mul(3));
+
+    const commands = [
+      [token, "transfer", "0x010001ffffffff", "0xff"]
+    ];
+    const state = [
+      // dest slot index
+      "0x000000000000000000000000" + to.slice(2),
+      // amt slot index
+      ethers.utils.hexZeroPad("0x01", 32),
+      // ret slot index
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+    ];
+
+    const tx = await execute(commands, state);
+    await expect(tx)
+        .to.emit(token, "Transfer")
+        .withArgs(vm.address, to, "0x1");
+
+    const receipt = await tx.wait();
+    console.log(`Direct ERC20 transfer: ${receipt.gasUsed.toNumber()} gas`);
   });
 });
