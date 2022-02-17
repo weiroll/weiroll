@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
 import "./CommandBuilder.sol";
@@ -18,6 +17,12 @@ contract VM {
     using CommandBuilder for bytes[];
 
     address immutable self;
+
+    error ExecutionFailed(
+        uint256 command_index,
+        address target,
+        string message
+    );
 
     modifier ensureDelegateCall() {
         require(address(this) != self);
@@ -51,8 +56,7 @@ contract VM {
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
-                (success, outdata) = address(uint160(uint256(command))) // target
-                .delegatecall(
+                (success, outdata) = address(uint160(uint256(command))).delegatecall( // target
                     // inputs
                     state.buildInputs(
                         //selector
@@ -70,8 +74,7 @@ contract VM {
                     )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
-                (success, outdata) = address(uint160(uint256(command))) // target
-                .staticcall(
+                (success, outdata) = address(uint160(uint256(command))).staticcall( // target
                     // inputs
                     state.buildInputs(
                         //selector
@@ -99,7 +102,18 @@ contract VM {
                 revert("Invalid calltype");
             }
 
-            require(success, "Call failed");
+            if (!success) {
+                if (outdata.length > 0) {
+                    assembly {
+                        outdata := add(outdata, 68)
+                    }
+                }
+                revert ExecutionFailed({
+                    command_index: 0,
+                    target: address(uint160(uint256(command))),
+                    message: outdata.length > 0 ? string(outdata) : "Unknown"
+                });
+            }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
                 state.writeTuple(bytes1(command << 88), outdata);

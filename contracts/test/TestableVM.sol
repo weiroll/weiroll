@@ -17,7 +17,12 @@ contract TestableVM {
         (bool success, bytes memory data) = address(vm).delegatecall(
             abi.encodeWithSelector(VM.execute.selector, commands, state)
         );
-        require(success);
+        
+        if (!success) {
+            assembly {
+                revert(add(32, data), mload(data))
+            }
+        }
 
         return abi.decode(data, (bytes[]));
     }
