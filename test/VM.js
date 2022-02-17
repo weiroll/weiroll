@@ -19,9 +19,7 @@ describe("VM", function () {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
-
-    const revertContract = await (await ethers.getContractFactory("Revert")).deploy();
-    revert = weiroll.Contract.createContract(revertContract);
+    revert = await deployLibrary("Revert");
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.createLibrary(eventsContract);
