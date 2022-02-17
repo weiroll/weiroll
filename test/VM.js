@@ -11,7 +11,7 @@ async function deployLibrary(name) {
 describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, vm, math, strings, stateTest, sender, vmLibrary, token;
+  let events, vm, math, strings, stateTest, sender, revert, vmLibrary, token;
   let supply = ethers.BigNumber.from("100000000000000000000");
   let eventsContract;
 
@@ -19,6 +19,9 @@ describe("VM", function () {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
+
+    const revertContract = await (await ethers.getContractFactory("Revert")).deploy();
+    revert = weiroll.Contract.createContract(revertContract);
     
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.createLibrary(eventsContract);
@@ -189,5 +192,14 @@ describe("VM", function () {
 
     const receipt = await tx.wait();
     console.log(`Direct ERC20 transfer: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should propagate revert reasons", async () => {
+    const planner = new weiroll.Planner();
+
+    planner.add(revert.fail());
+    const { commands, state } = planner.plan();
+    
+    await expect(vm.execute(commands, state)).to.be.revertedWith("Hello World!");
   });
 });
