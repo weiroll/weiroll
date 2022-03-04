@@ -11,8 +11,7 @@
     "hardhat": "^2.3.3",
     "prettier": "^2.3.1",
     "prettier-plugin-solidity": "*",
-    "solhint-plugin-prettier": "^0.0.5",
-    "hardhat-gas-reporter": "^1.0.4"
+    "solhint-plugin-prettier": "^0.0.5"
   },
   "scripts": {
     "test": "hardhat test",
