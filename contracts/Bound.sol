@@ -13,6 +13,7 @@ contract BoundWeiroll is VM {
     function execute(bytes32[] calldata commands, bytes[] memory state)
       external returns (bytes[] memory) {
         require(msg.sender == owner, 'ERR_OWNER');
+        return _execute(commands, state);
     }
 }
 
