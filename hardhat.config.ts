@@ -12,7 +12,7 @@ const userConfig: HardhatUserConfig = {
   mocha: {
     timeout: 2000000,
   },
-  solidity: "0.8.4",
+  solidity: "0.8.11",
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.11;
 
 contract Strings {
     function strlen(string calldata x) external pure returns (uint256) {
