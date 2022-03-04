@@ -9,11 +9,8 @@ describe("Tuple", function () {
     multiReturn = await (await ethers.getContractFactory("MultiReturn")).deploy();
     tupler = await (await ethers.getContractFactory("LibTupler")).deploy();
 
-    const VMLibrary = await ethers.getContractFactory("VM");
-    const vmLibrary = await VMLibrary.deploy();
-
     const VM = await ethers.getContractFactory("TestableVM");
-    vm = await VM.deploy(vmLibrary.address);
+    vm = await VM.deploy();
   });
 
   function execute(commands, state) {
@@ -27,7 +24,7 @@ describe("Tuple", function () {
     );
     return vm.execute(encodedCommands, state);
   }
-  
+
   it("Should perform a tuple return that's sliced before being fed to another function (first var)", async () => {
 
     const commands = [
@@ -46,7 +43,7 @@ describe("Tuple", function () {
 
     await expect(tx)
       .to.emit(multiReturn.attach(vm.address), "Calculated")
-      .withArgs(0xbad); 
+      .withArgs(0xbad);
 
     const receipt = await tx.wait();
     console.log(`Tuple return+slice: ${receipt.gasUsed.toNumber()} gas`);

@@ -14,24 +14,18 @@ uint8 constant FLAG_TUPLE_RETURN = 0x40;
 
 uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-contract VM {
+
+abstract contract VM {
     using CommandBuilder for bytes[];
 
     address immutable self;
-
-    modifier ensureDelegateCall() {
-        require(address(this) != self);
-        _;
-    }
 
     constructor() {
         self = address(this);
     }
 
-    function execute(bytes32[] calldata commands, bytes[] memory state)
-        public
-        ensureDelegateCall
-        returns (bytes[] memory)
+    function _execute(bytes32[] calldata commands, bytes[] memory state)
+      internal returns (bytes[] memory)
     {
         bytes32 command;
         uint256 flags;
@@ -110,3 +104,4 @@ contract VM {
         return state;
     }
 }
+
