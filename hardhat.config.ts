@@ -1,6 +1,5 @@
 import "@nomiclabs/hardhat-waffle";
 import type {HardhatUserConfig} from "hardhat/types";
-import "hardhat-gas-reporter"
 
 const userConfig: HardhatUserConfig = {
   paths: {
@@ -16,10 +15,6 @@ const userConfig: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
-  },
-  gasReporter: {
-    currency: 'USD',
-    gasPrice: 21
   }
 };
 export default userConfig
