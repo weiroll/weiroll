@@ -19,7 +19,7 @@ contract CommandBuilderHarness {
         bytes1 index,
         bytes memory output
     ) public pure returns (bytes[] memory, bytes memory) {
-	(index, output); // shh compiler
+        (index, output); // shh compiler
         return (state, new bytes(32));
     }
 
