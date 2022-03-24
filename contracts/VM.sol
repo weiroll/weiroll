@@ -40,7 +40,8 @@ abstract contract VM {
         bool success;
         bytes memory outdata;
 
-        for (uint256 i = 0; i < commands.length; i++) {
+	uint256 commandsLength = commands.length;
+        for (uint256 i; i < commandsLength; ++i) {
             command = commands[i];
             flags = uint8(bytes1(command << 32));
 
