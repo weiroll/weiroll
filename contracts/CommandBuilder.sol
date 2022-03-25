@@ -46,8 +46,8 @@ library CommandBuilder {
                     state[idx & IDX_VALUE_MASK].length == 32,
                     "Static state variables must be 32 bytes"
                 );
-                unchecked{count += 32;}
-                free += 32;
+                count += 32;
+                unchecked{free += 32;}
             }
         }
 
