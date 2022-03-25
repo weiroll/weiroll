@@ -40,7 +40,8 @@ abstract contract VM {
         bool success;
         bytes memory outdata;
 
-        for (uint256 i = 0; i < commands.length; i++) {
+        uint256 commandsLength = commands.length;
+        for (uint256 i; i < commandsLength; i=_uncheckedIncrement(i)) {
             command = commands[i];
             flags = uint8(bytes1(command << 32));
 
@@ -117,6 +118,11 @@ abstract contract VM {
             }
         }
         return state;
+    }
+
+    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
+        unchecked {++i;}
+        return i;
     }
 }
 

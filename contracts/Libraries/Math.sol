@@ -19,7 +19,8 @@ contract Math {
         pure
         returns (uint256 ret)
     {
-        for (uint256 i = 0; i < values.length; i++) {
+        uint256 valuesLength = values.length;
+        for (uint256 i; i < valuesLength; ++i) {
             ret += values[i];
         }
     }

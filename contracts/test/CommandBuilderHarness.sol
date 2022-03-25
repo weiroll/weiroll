@@ -18,7 +18,8 @@ contract CommandBuilderHarness {
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) public view returns (bytes[] memory, bytes memory) {
+    ) public pure returns (bytes[] memory, bytes memory) {
+        (index, output); // shh compiler
         return (state, new bytes(32));
     }
 
@@ -36,7 +37,7 @@ contract CommandBuilderHarness {
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) public view returns (bytes[] memory, bytes memory) {
+    ) public pure returns (bytes[] memory, bytes memory) {
         state = state.writeOutputs(index, output);
 
         return (state, output);

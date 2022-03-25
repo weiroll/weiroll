@@ -13,14 +13,14 @@ library CommandBuilder {
         bytes4 selector,
         bytes32 indices
     ) internal view returns (bytes memory ret) {
-        uint256 count = 0; // Number of bytes in whole ABI encoded message
-        uint256 free = 0; // Pointer to first free byte in tail part of message
+        uint256 count; // Number of bytes in whole ABI encoded message
+        uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
         uint256 idx;
 
         // Determine the length of the encoded data
-        for (uint256 i = 0; i < 32; i++) {
+        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -57,7 +57,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i = 0; i < 32; i++) {
+        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -101,7 +101,7 @@ library CommandBuilder {
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) internal view returns (bytes[] memory) {
+    ) internal pure returns (bytes[] memory) {
         uint256 idx = uint8(index);
         if (idx == IDX_END_OF_ARGS) return state;
 
@@ -177,5 +177,10 @@ library CommandBuilder {
                 )
             )
         }
+    }
+
+    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
+        unchecked {++i;}
+        return i;
     }
 }
