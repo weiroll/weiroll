@@ -30,7 +30,7 @@ library CommandBuilder {
                         stateData = abi.encode(state);
                     }
                     count += stateData.length;
-                    free += 32;
+                    unchecked{free += 32;}
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
@@ -39,14 +39,14 @@ library CommandBuilder {
                         "Dynamic state variables must be a multiple of 32 bytes"
                     );
                     count += arglen + 32;
-                    free += 32;
+                    unchecked{free += 32;}
                 }
             } else {
                 require(
                     state[idx & IDX_VALUE_MASK].length == 32,
                     "Static state variables must be 32 bytes"
                 );
-                count += 32;
+                unchecked{count += 32;}
                 free += 32;
             }
         }
@@ -68,7 +68,7 @@ library CommandBuilder {
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
-                    count += 32;
+                    unchecked{count += 32;}
                 } else {
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
 
@@ -84,7 +84,7 @@ library CommandBuilder {
                         arglen
                     );
                     free += arglen;
-                    count += 32;
+                    unchecked{count += 32;}
                 }
             } else {
                 // Fixed length data; write it directly
@@ -92,7 +92,7 @@ library CommandBuilder {
                 assembly {
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
-                count += 32;
+                unchecked{count += 32;}
             }
         }
     }
