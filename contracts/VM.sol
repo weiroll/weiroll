@@ -46,7 +46,7 @@ abstract contract VM {
             flags = uint8(bytes1(command << 32));
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++]; // GEORGE does this advance of index "i" make sense?
+                indices = commands[i++];
             } else {
                 indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
             }
