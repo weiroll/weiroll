@@ -34,7 +34,7 @@ abstract contract VM {
       internal returns (bytes[] memory)
     {
         bytes32 command;
-        uint256 flags;
+        uint8 flags;
         bytes32 indices;
 
         bool success;
