@@ -34,7 +34,7 @@ abstract contract VM {
       internal returns (bytes[] memory)
     {
         bytes32 command;
-        uint256 flags;
+        uint8 flags;
         bytes32 indices;
 
         bool success;
@@ -46,7 +46,7 @@ abstract contract VM {
             flags = uint8(bytes1(command << 32));
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
+                indices = commands[i++]; // GEORGE does this advance of index "i" make sense?
             } else {
                 indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
             }
