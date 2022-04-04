@@ -147,7 +147,7 @@ library CommandBuilder {
         bytes1 index,
         bytes memory output
     ) internal view {
-        uint8 idx = uint8(index);
+        uint256 idx = uint256(uint8(index));
         if (idx == IDX_END_OF_ARGS) return;
 
         bytes memory entry = state[idx] = new bytes(output.length + 32);
