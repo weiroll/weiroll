@@ -1,37 +1,38 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+
+pragma solidity ^0.8.11;
 
 import "./CommandBuilder.sol";
+import "hardhat/console.sol";
 
-uint8 constant FLAG_CT_DELEGATECALL = 0x00;
-uint8 constant FLAG_CT_CALL = 0x01;
-uint8 constant FLAG_CT_STATICCALL = 0x02;
-uint8 constant FLAG_CT_VALUECALL = 0x03;
-uint8 constant FLAG_CT_MASK = 0x03;
-uint8 constant FLAG_EXTENDED_COMMAND = 0x80;
-uint8 constant FLAG_TUPLE_RETURN = 0x40;
+uint256 constant FLAG_CT_DELEGATECALL = 0x00;
+uint256 constant FLAG_CT_CALL = 0x01;
+uint256 constant FLAG_CT_STATICCALL = 0x02;
+uint256 constant FLAG_CT_VALUECALL = 0x03;
+uint256 constant FLAG_CT_MASK = 0x03;
+uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
+uint256 constant FLAG_TUPLE_RETURN = 0x40;
 
 uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-contract VM {
+
+abstract contract VM {
     using CommandBuilder for bytes[];
 
     address immutable self;
 
-    modifier ensureDelegateCall() {
-        require(address(this) != self);
-        _;
-    }
+    error ExecutionFailed(
+        uint256 command_index,
+        address target,
+        string message
+    );
 
     constructor() {
         self = address(this);
     }
 
-    function execute(bytes32[] calldata commands, bytes[] memory state)
-        public
-        payable
-        ensureDelegateCall
-        returns (bytes[] memory)
+    function _execute(bytes32[] calldata commands, bytes[] memory state)
+      internal returns (bytes[] memory)
     {
         bytes32 command;
         uint256 flags;
@@ -40,9 +41,10 @@ contract VM {
         bool success;
         bytes memory outdata;
 
-        for (uint256 i = 0; i < commands.length; i++) {
+        uint256 commandsLength = commands.length;
+        for (uint256 i; i < commandsLength; i=_uncheckedIncrement(i)) {
             command = commands[i];
-            flags = uint8(bytes1(command << 32));
+            flags = uint256(uint8(bytes1(command << 32)));
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
@@ -51,8 +53,7 @@ contract VM {
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
-                (success, outdata) = address(uint160(uint256(command))) // target
-                .delegatecall(
+                (success, outdata) = address(uint160(uint256(command))).delegatecall( // target
                     // inputs
                     state.buildInputs(
                         //selector
@@ -70,8 +71,7 @@ contract VM {
                     )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
-                (success, outdata) = address(uint160(uint256(command))) // target
-                .staticcall(
+                (success, outdata) = address(uint160(uint256(command))).staticcall( // target
                     // inputs
                     state.buildInputs(
                         //selector
@@ -80,27 +80,27 @@ contract VM {
                     )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
-                uint256 calleth;
+                uint calleth;
                 bytes memory v = state[uint8(bytes1(indices))];
                 assembly {
-                    calleth := mload(add(v, add(0x20, 0)))
+                    calleth := mload(add(v, 0x20))
                 }
+                console.log("vale %i %i", msg.value, address(this).balance);
 
-                (success, outdata) = address(uint160(uint256(command))).call{ // target
+                (success, outdata) = address(uint160(uint256(command))).call{
                     value: calleth
                 }(
                     // inputs
                     state.buildInputs(
                         //selector
                         bytes4(command),
-                        bytes32(uint256(indices << 8) | IDX_END_OF_ARGS)
+                        indices
                     )
                 );
+                console.log("OK %s", success);
             } else {
                 revert("Invalid calltype");
             }
-
-            require(success, "Call failed");
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
                 state.writeTuple(bytes1(command << 88), outdata);
@@ -110,4 +110,10 @@ contract VM {
         }
         return state;
     }
+
+    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
+        unchecked {++i;}
+        return i;
+    }
 }
+
