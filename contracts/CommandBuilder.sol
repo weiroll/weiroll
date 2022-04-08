@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+
+pragma solidity ^0.8.11;
 
 uint256 constant IDX_VARIABLE_LENGTH = 0x80;
 uint256 constant IDX_VALUE_MASK = 0x7f;
@@ -12,14 +13,14 @@ library CommandBuilder {
         bytes4 selector,
         bytes32 indices
     ) internal view returns (bytes memory ret) {
-        uint256 count = 0; // Number of bytes in whole ABI encoded message
-        uint256 free = 0; // Pointer to first free byte in tail part of message
+        uint256 count; // Number of bytes in whole ABI encoded message
+        uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
         uint256 idx;
 
         // Determine the length of the encoded data
-        for (uint256 i = 0; i < 32; i++) {
+        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -29,7 +30,7 @@ library CommandBuilder {
                         stateData = abi.encode(state);
                     }
                     count += stateData.length;
-                    free += 32;
+                    unchecked{free += 32;}
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
@@ -38,7 +39,7 @@ library CommandBuilder {
                         "Dynamic state variables must be a multiple of 32 bytes"
                     );
                     count += arglen + 32;
-                    free += 32;
+                    unchecked{free += 32;}
                 }
             } else {
                 require(
@@ -46,7 +47,7 @@ library CommandBuilder {
                     "Static state variables must be 32 bytes"
                 );
                 count += 32;
-                free += 32;
+                unchecked{free += 32;}
             }
         }
 
@@ -56,7 +57,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i = 0; i < 32; i++) {
+        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -67,7 +68,7 @@ library CommandBuilder {
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
-                    count += 32;
+                    unchecked{count += 32;}
                 } else {
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
 
@@ -83,7 +84,7 @@ library CommandBuilder {
                         arglen
                     );
                     free += arglen;
-                    count += 32;
+                    unchecked{count += 32;}
                 }
             } else {
                 // Fixed length data; write it directly
@@ -91,7 +92,7 @@ library CommandBuilder {
                 assembly {
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
-                count += 32;
+                unchecked{count += 32;}
             }
         }
     }
@@ -100,7 +101,7 @@ library CommandBuilder {
         bytes[] memory state,
         bytes1 index,
         bytes memory output
-    ) internal view returns (bytes[] memory) {
+    ) internal pure returns (bytes[] memory) {
         uint256 idx = uint8(index);
         if (idx == IDX_END_OF_ARGS) return state;
 
@@ -146,7 +147,7 @@ library CommandBuilder {
         bytes1 index,
         bytes memory output
     ) internal view {
-        uint8 idx = uint8(index);
+        uint256 idx = uint256(uint8(index));
         if (idx == IDX_END_OF_ARGS) return;
 
         bytes memory entry = state[idx] = new bytes(output.length + 32);
@@ -176,5 +177,10 @@ library CommandBuilder {
                 )
             )
         }
+    }
+
+    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
+        unchecked {++i;}
+        return i;
     }
 }
