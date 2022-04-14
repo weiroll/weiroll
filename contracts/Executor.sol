@@ -264,17 +264,18 @@ object "Executor" {
                     case 0 {
                         let dataSize := returndatasize()
                         // Increase in the length of the data after adding the tuple.
-                        let delta := sub(dataSize, mload(indexPtr))
+                        let delta := add(sub(dataSize, mload(indexPtr)), 0x20)
                         let stateLen := mload(statePtr)
                         // Move the free pointer
-                        mstore(0x20, add(mload(0x20), delta))
-                        let tempPtr := mload(0x20)
+                        let tempPtr := malloc(delta)
+                        tempPtr := add(tempPtr, delta)
                         returndatacopy(tempPtr, 0, dataSize)
                         for { let lptrptr := add(statePtr, mul(0x20, stateLen)) } gt(stateLen, 0) { stateLen := sub(stateLen, 1) } {
                             if eq(lptrptr, add(statePtr, mul(0x20, add(index,1)))) {
                                 let lptr := mload(lptrptr)
-                                mstore(lptr, dataSize)
-                                memcpy(add(lptr, 0x20), tempPtr, dataSize)
+                                mstore(lptr, add(dataSize, 0x20))
+                                mstore(add(lptr, 0x20), dataSize)
+                                memcpy(add(add(lptr, 0x20), 0x20), tempPtr, dataSize)
                                 break
                             }
                             let lptr := mload(lptrptr)
@@ -283,6 +284,8 @@ object "Executor" {
                             mstore(lptrptr, newLocationPtr)
                             lptrptr := sub(lptrptr, 0x20)
                         }
+                        // Move the free pointer to avoid using any garbage data for further command executions
+                        pop(malloc(dataSize))
                     }
                 }
             }
