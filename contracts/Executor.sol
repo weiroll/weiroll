@@ -103,16 +103,43 @@ object "Executor" {
                             break
                         }
 
-                        idx := and(idx, 0x7F)
-                        // Get the location of the argument in state, and its length
-                        let argptr := getStateSlot(statePtr, idx, 0)
-                        let arglen := mload(argptr)
-                        // Write a pointer to the argument in the tail part
-                        mstore(add(add(inptr, head), 4), tail)
-                        head := add(head, 0x20)
-                        // Write the argument to the tail part
-                        memcpy(add(add(inptr, tail), 4), add(argptr, 0x20), arglen)
-                        tail := add(tail, arglen)
+                        switch and(idx, 0xFF)
+
+                        case 0xFE {
+                            // Copy the state array into the encoding state.
+
+                            // First calculate the location
+                            let currentPtr := add(add(inptr, head), 4)
+                            head := add(head, 0x20)
+                            mstore(currentPtr, head)
+                            let locationptr := add(currentPtr, 0x20)
+                            // Store the length of the variable-size array
+                            mstore(locationptr, mload(statePtr))
+                            head := add(head, 0x20)
+                            let totalBytes := 0
+                            for { let j := 0 } lt(j, mload(statePtr)) { j := add(j,1)} {
+                                // Pointer where the length of the bytes value at index j is stored.
+                                let ptr := mload(add(statePtr, mul( add(j,1), 0x20)))
+                                locationptr := add(locationptr, 0x20)
+                                mstore(locationptr, add(mul(0x20, mload(statePtr)), totalBytes))
+                                totalBytes := add(totalBytes, add(0x20, mload(ptr)))
+                                head := add(head, 0x20)
+                            }
+                            memcpy(add(locationptr, 0x20), mload(add(statePtr, 0x20)), totalBytes)
+                            head := add(head, totalBytes)
+                            tail := head
+                        } default {
+                            idx := and(idx, 0x7F)
+                            // Get the location of the argument in state, and its length
+                            let argptr := getStateSlot(statePtr, idx, 0)
+                            let arglen := mload(argptr)
+                            // Write a pointer to the argument in the tail part
+                            mstore(add(add(inptr, head), 4), tail)
+                            head := add(head, 0x20)
+                            // Write the argument to the tail part
+                            memcpy(add(add(inptr, tail), 4), add(argptr, 0x20), arglen)
+                            tail := add(tail, arglen)
+                        }
                     }
                     // Word-sized argument
                     default {
@@ -125,6 +152,21 @@ object "Executor" {
                 }
                 insize := add(tail, 4)
             }
+
+
+            function wroteNewStateBytesArray(rptr, statePtr) {
+                let stateLen := mload(rptr)
+                mstore(statePtr, stateLen)
+                let dptr := add(statePtr, mul(stateLen, 0x20))
+                for { let mp := statePtr let rdp := rptr} gt(stateLen, 0) { stateLen := sub(stateLen, 1) } {
+                    mp := add(mp, 0x20)
+                    rdp := add(rdp, 0x20)
+                    let datalen := mload(add(add(rptr, 0x20),mload(rdp)))
+                    memcpy(dptr, add(add(rptr, 0x20),mload(rdp)), add(datalen, 0x20))
+                    mstore(mp, dptr)
+                    dptr := add(dptr, add(datalen, 0x20))
+                }
+            }
             
             // Updates the state with return data from the last call
             function writeOutput(index, statePtr) {
@@ -134,15 +176,26 @@ object "Executor" {
                     if eq(index, 0xFF) {
                         leave
                     }
+                    switch and(index, 0xFF)
 
-                    index := and(index, 0x7F)
-                    let argptr := getStateSlot(statePtr, index, sub(returndatasize(), 20))
-                    // Copy the return data to the state variable
-                    returndatacopy(argptr, 0, returndatasize())
-                    // Check the first word of the return data is a pointer
-                    require(eq(mload(argptr), 0x20))
-                    // Overwrite the first word with the length of the return data
-                    mstore(argptr, sub(returndatasize(), 0x20))
+                    case 0xFE {
+                        let argptr := add(statePtr, returndatasize())
+                        // Copy the return data to the state variable
+                        returndatacopy(argptr, 0, returndatasize())
+                        // Check the first word of the return data is a pointer
+                        require(eq(mload(argptr), 0x20))
+                        wroteNewStateBytesArray(add(argptr, 0x20), statePtr)
+                    }
+                    default {
+                        index := and(index, 0x7F)
+                        let argptr := getStateSlot(statePtr, index, sub(returndatasize(), 20))
+                        // Copy the return data to the state variable
+                        returndatacopy(argptr, 0, returndatasize())
+                        // Check the first word of the return data is a pointer
+                        require(eq(mload(argptr), 0x20))
+                        // Overwrite the first word with the length of the return data
+                        mstore(argptr, sub(returndatasize(), 0x20))
+                    }
                 }
                 // Word-sized return value
                 default {
@@ -189,6 +242,53 @@ object "Executor" {
                 }
                 require(result)
             }
+
+            function writeTuple(index, statePtr) {
+                if eq(index, 0xFF) {
+                    leave
+                }
+                let indexPtr := mload(add(statePtr, mul(0x20, add(index, 1))))
+
+                switch lt(returndatasize(), mload(indexPtr))
+
+                case 1 {
+                    mstore(indexPtr, returndatasize())
+                    returndatacopy(add(indexPtr, 0x20), 0, returndatasize())
+                }
+                case 0 {
+                    switch eq(returndatasize(),  mload(indexPtr))
+
+                    case 1 {
+                        returndatacopy(add(indexPtr, 0x20), 0, returndatasize())
+                    }
+                    case 0 {
+                        let dataSize := returndatasize()
+                        // Increase in the length of the data after adding the tuple.
+                        let delta := add(sub(dataSize, mload(indexPtr)), 0x20)
+                        let stateLen := mload(statePtr)
+                        // Move the free pointer
+                        let tempPtr := malloc(delta)
+                        tempPtr := add(tempPtr, delta)
+                        returndatacopy(tempPtr, 0, dataSize)
+                        for { let lptrptr := add(statePtr, mul(0x20, stateLen)) } gt(stateLen, 0) { stateLen := sub(stateLen, 1) } {
+                            if eq(lptrptr, add(statePtr, mul(0x20, add(index,1)))) {
+                                let lptr := mload(lptrptr)
+                                mstore(lptr, add(dataSize, 0x20))
+                                mstore(add(lptr, 0x20), dataSize)
+                                memcpy(add(add(lptr, 0x20), 0x20), tempPtr, dataSize)
+                                break
+                            }
+                            let lptr := mload(lptrptr)
+                            let newLocationPtr := add(lptr, delta)
+                            memcpy(newLocationPtr, lptr, add(0x20, mload(lptr)))
+                            mstore(lptrptr, newLocationPtr)
+                            lptrptr := sub(lptrptr, 0x20)
+                        }
+                        // Move the free pointer to avoid using any garbage data for further command executions
+                        pop(malloc(dataSize))
+                    }
+                }
+            }
             
             // Executes a single command against the current state
             function executeCommand(statePtr, command, indices) {
@@ -199,14 +299,21 @@ object "Executor" {
                 // Make the call
                 let target := and(command, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 doCall(target, statePtr, sel, indices, flags)
-                // Write the output back to the state
-                writeOutput(and(shr(160, command), 0xFF), statePtr)
+
+                // Flag tuple return
+                switch and(flags, 0xFF)
+                case 0x40 {
+                    writeTuple(and(shr(160, command), 0xFF), statePtr)
+                } default {
+                    // Write the output back to the state
+                    writeOutput(and(shr(160, command), 0xFF), statePtr)
+                }
             }
             
             // Implements `execute(bytes32[] calldata commands, bytes[] calldata state)`
             function execute() {
                 // Load the state into memory
-                let statePtr := loadCalldataBytesArray(add(calldataload(0x24), 4))
+                let statePtr := loadCalldataBytesArray(add(calldataload(0x24), 4))  // 164 th pointer i.e a4
 
                 // Iterate over the commands
                 let commandPtr := add(calldataload(0x4), 4)
