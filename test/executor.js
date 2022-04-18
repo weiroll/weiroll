@@ -66,7 +66,7 @@ describe("Executor", function () {
       .withArgs(55);
 
     const receipt = await tx.wait();
-    let gas = receipt.gasUsed.toNumber() - 21000;
+    let gas = receipt.gasUsed.toNumber();
     console.log(`Fibonacci: ${gas} gas`);
     totalGas += gas;
   });
@@ -83,7 +83,7 @@ describe("Executor", function () {
       .withArgs(13);
 
     const receipt = await tx.wait();
-    let gas = receipt.gasUsed.toNumber() - 21000;
+    let gas = receipt.gasUsed.toNumber();
     console.log(`String length: ${gas} gas`);
     totalGas += gas;
   });
@@ -100,7 +100,7 @@ describe("Executor", function () {
       .withArgs(testString + testString);
 
     const receipt = await tx.wait();
-    let gas = receipt.gasUsed.toNumber() - 21000;
+    let gas = receipt.gasUsed.toNumber();
     console.log(`String concatenation: ${gas} gas`);
     totalGas += gas;
   });
@@ -117,7 +117,7 @@ describe("Executor", function () {
       .withArgs(6);
 
     const receipt = await tx.wait();
-    let gas = receipt.gasUsed.toNumber() - 21000;
+    let gas = receipt.gasUsed.toNumber();
     console.log(`Array Sum: ${gas} gas`);
     totalGas += gas;
   });
@@ -146,7 +146,7 @@ describe("Executor", function () {
       .withArgs("0x0000000000000000000000000000000000000000000000000000000000000003");
 
     const receipt = await tx.wait();
-    let gas = receipt.gasUsed.toNumber() - 21000;
+    let gas = receipt.gasUsed.toNumber();
     console.log(`State passing: ${gas} gas`);
     totalGas += gas;
   });

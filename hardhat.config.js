@@ -58,7 +58,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: '0.8.4',
+        version: '0.8.13',
         settings: {
           optimizer: {
             enabled: true,
@@ -69,11 +69,11 @@ module.exports = {
     ],
     overrides: {
       "contracts/Executor.sol": {
-        version: "0.8.4",
+        version: "0.8.13",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 100000,
+            runs: 900000
           },
           language: "Yul"
         }
