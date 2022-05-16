@@ -30,7 +30,6 @@ library CommandBuilder {
                         stateData = abi.encode(state);
                     }
                     count += stateData.length;
-                    unchecked{free += 32;}
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
@@ -39,7 +38,6 @@ library CommandBuilder {
                         "Dynamic state variables must be a multiple of 32 bytes"
                     );
                     count += arglen + 32;
-                    unchecked{free += 32;}
                 }
             } else {
                 require(
@@ -47,8 +45,8 @@ library CommandBuilder {
                     "Static state variables must be 32 bytes"
                 );
                 count += 32;
-                unchecked{free += 32;}
             }
+            unchecked{free += 32;}
         }
 
         // Encode it
