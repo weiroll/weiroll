@@ -20,7 +20,7 @@ library CommandBuilder {
         uint256 idx;
 
         // Determine the length of the encoded data
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -49,6 +49,7 @@ library CommandBuilder {
                 count += 32;
                 unchecked{free += 32;}
             }
+            unchecked{++i;}
         }
 
         // Encode it
@@ -57,7 +58,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -94,6 +95,7 @@ library CommandBuilder {
                 }
                 unchecked{count += 32;}
             }
+            unchecked{++i;}
         }
     }
 
@@ -177,10 +179,5 @@ library CommandBuilder {
                 )
             )
         }
-    }
-
-    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
-        unchecked {++i;}
-        return i;
     }
 }
