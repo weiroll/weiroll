@@ -66,7 +66,6 @@ library CommandBuilder {
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
-                    unchecked{count += 32;}
                 } else {
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
 
@@ -82,7 +81,6 @@ library CommandBuilder {
                         arglen
                     );
                     free += arglen;
-                    unchecked{count += 32;}
                 }
             } else {
                 // Fixed length data; write it directly
@@ -90,8 +88,8 @@ library CommandBuilder {
                 assembly {
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
-                unchecked{count += 32;}
             }
+            unchecked{count += 32;}
         }
     }
 
