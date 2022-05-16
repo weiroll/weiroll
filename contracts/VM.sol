@@ -43,7 +43,7 @@ abstract contract VM {
         uint256 commandsLength = commands.length;
         for (uint256 i; i < commandsLength; i=_uncheckedIncrement(i)) {
             command = commands[i];
-            flags = uint256(uint8(bytes1(command << 32)));
+            flags = uint256(command >> 216) & 0xFF;
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
