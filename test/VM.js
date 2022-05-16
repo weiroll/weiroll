@@ -8,6 +8,12 @@ async function deployLibrary(name) {
   return weiroll.Contract.createLibrary(contract);
 }
 
+async function deployContract(name) {
+  const factory = await ethers.getContractFactory(name);
+  const contract = await factory.deploy();
+  return weiroll.Contract.createContract(contract);
+}
+
 describe("VM", function () {
   const testString = "Hello, world!";
 
@@ -20,6 +26,7 @@ describe("VM", function () {
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
     revert = await deployLibrary("Revert");
+    receiver = await deployContract("Receiver");
 
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.createLibrary(eventsContract);
@@ -75,12 +82,23 @@ describe("VM", function () {
     }
     planner.add(events.logUint(b));
     const { commands, state } = planner.plan();
-
+    
     const tx = await vm.execute(commands, state);
     await expect(tx)
       .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(55);
 
+    const receipt = await tx.wait();
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should execute a simple receiver program", async () => {
+    const planner = new weiroll.Planner();
+    const value = 100;
+    const ret = planner.add(receiver.receive(value).withValue(value));
+    const { commands, state } = planner.plan();
+    
+    const tx = await vm.execute(commands, state, {value: value});
     const receipt = await tx.wait();
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
   });
