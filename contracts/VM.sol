@@ -91,7 +91,7 @@ abstract contract VM {
                     state.buildInputs(
                         //selector
                         bytes4(command),
-                        bytes32(uint256(indices << 8) | IDX_END_OF_ARGS)
+                        bytes32(uint256(indices << 8) | CommandBuilder.IDX_END_OF_ARGS)
                     )
                 );
             } else {

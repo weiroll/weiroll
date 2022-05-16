@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.11;
 
-uint256 constant IDX_VARIABLE_LENGTH = 0x80;
-uint256 constant IDX_VALUE_MASK = 0x7f;
-uint256 constant IDX_END_OF_ARGS = 0xff;
-uint256 constant IDX_USE_STATE = 0xfe;
-
 library CommandBuilder {
+
+    uint256 constant IDX_VARIABLE_LENGTH = 0x80;
+    uint256 constant IDX_VALUE_MASK = 0x7f;
+    uint256 constant IDX_END_OF_ARGS = 0xff;
+    uint256 constant IDX_USE_STATE = 0xfe;
+
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
