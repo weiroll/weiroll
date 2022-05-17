@@ -56,26 +56,26 @@ library CommandBuilder {
         assembly {
             mstore(add(ret, 32), selector)
         }
-        count = 0;
+        //count = 0;
+        assembly {
+            count := add(ret, 36)
+        }
         for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
+                // Variable length data; put a pointer in the slot and write the data at the end
+                assembly {
+                    //mstore(add(add(ret, 36), count), free)
+                    mstore(count, free)
+                }
                 if (idx == IDX_USE_STATE) {
-                    assembly {
-                        mstore(add(add(ret, 36), count), free)
-                    }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
-                    unchecked{count += 32;}
+                    //unchecked{count += 32;}
                 } else {
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
-
-                    // Variable length data; put a pointer in the slot and write the data at the end
-                    assembly {
-                        mstore(add(add(ret, 36), count), free)
-                    }
                     memcpy(
                         state[idx & IDX_VALUE_MASK],
                         0,
@@ -84,16 +84,18 @@ library CommandBuilder {
                         arglen
                     );
                     free += arglen;
-                    unchecked{count += 32;}
+                    //unchecked{count += 32;}
                 }
             } else {
                 // Fixed length data; write it directly
                 bytes memory statevar = state[idx & IDX_VALUE_MASK];
                 assembly {
-                    mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    //mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    mstore(count, mload(add(statevar, 32)))
                 }
-                unchecked{count += 32;}
+                //unchecked{count += 32;}
             }
+            unchecked{count += 32;}
         }
     }
 
