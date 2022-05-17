@@ -95,12 +95,17 @@ describe("VM", function () {
   it("Should execute a simple receiver program", async () => {
     const planner = new weiroll.Planner();
     const value = 100;
+    const balanceBefore = await ethers.provider.getBalance(receiver.address) 
+    expect(parseInt(balanceBefore)).to.be.equal(0)
     const ret = planner.add(receiver.receive(value).withValue(value));
     const { commands, state } = planner.plan();
     
     const tx = await vm.execute(commands, state, {value: value});
     const receipt = await tx.wait();
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+
+    const balanceAfter = await ethers.provider.getBalance(receiver.address) 
+    expect(parseInt(balanceAfter)).to.be.equal(value)
   });
 
   it("Should execute a string length program", async () => {
