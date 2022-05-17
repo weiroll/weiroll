@@ -9,11 +9,10 @@ uint256 constant FLAG_CT_CALL = 0x01;
 uint256 constant FLAG_CT_STATICCALL = 0x02;
 uint256 constant FLAG_CT_VALUECALL = 0x03;
 uint256 constant FLAG_CT_MASK = 0x03;
-uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
-uint256 constant FLAG_TUPLE_RETURN = 0x40;
+uint256 constant FLAG_EXTENDED_COMMAND = 0x40;
+uint256 constant FLAG_TUPLE_RETURN = 0x80;
 
 uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-
 
 abstract contract VM {
     using CommandBuilder for bytes[];
@@ -46,7 +45,7 @@ abstract contract VM {
             flags = uint256(uint8(bytes1(command << 32)));
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
+                indices = commands[++i];
             } else {
                 indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
             }
