@@ -168,13 +168,13 @@ library CommandBuilder {
         bool success;
         assembly {
             success := staticcall(
-                            gas(),
-                            4,
-                            add(add(src, 32), srcidx),
-                            len,
-                            add(add(dest, 32), destidx),
-                            len
-                        )
+                gas(),
+                4,
+                add(add(src, 32), srcidx),
+                len,
+                add(add(dest, 32), destidx),
+                len
+            )
         }
         if (!success) {
             assembly {
