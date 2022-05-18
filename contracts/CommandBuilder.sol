@@ -13,50 +13,26 @@ library CommandBuilder {
         bytes4 selector,
         bytes32 indices
     ) internal view returns (bytes memory ret) {
-        uint256 count; // Number of bytes in whole ABI encoded message
         uint256 free; // Pointer to first free byte in tail part of message
-        bytes memory stateData; // Optionally encode the current state if the call requires it
-
         uint256 idx;
 
         // Determine the length of the encoded data
         for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
-
-            if (idx & IDX_VARIABLE_LENGTH != 0) {
-                if (idx == IDX_USE_STATE) {
-                    if (stateData.length == 0) {
-                        stateData = abi.encode(state);
-                    }
-                    count += stateData.length;
-                    unchecked{free += 32;}
-                } else {
-                    // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                    uint256 arglen = state[idx & IDX_VALUE_MASK].length;
-                    require(
-                        arglen % 32 == 0,
-                        "Dynamic state variables must be a multiple of 32 bytes"
-                    );
-                    count += arglen + 32;
-                    unchecked{free += 32;}
-                }
-            } else {
-                require(
-                    state[idx & IDX_VALUE_MASK].length == 32,
-                    "Static state variables must be 32 bytes"
-                );
-                count += 32;
-                unchecked{free += 32;}
-            }
+            unchecked{free += 32;}
         }
 
         // Encode it
-        ret = new bytes(count + 4);
+        uint256 bytesWritten;
         assembly {
+            ret := mload(0x40)
+            bytesWritten := add(bytesWritten, 4)
+            mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
             mstore(add(ret, 32), selector)
         }
-        count = 0;
+        uint256 count = 0;
+        bytes memory stateData; // Optionally encode the current state if the call requires it
         for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
@@ -64,7 +40,16 @@ library CommandBuilder {
             if (idx & IDX_VARIABLE_LENGTH != 0) {
                 if (idx == IDX_USE_STATE) {
                     assembly {
+                        bytesWritten := add(bytesWritten, 32)
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                         mstore(add(add(ret, 36), count), free)
+                    }
+                    if (stateData.length == 0) {
+                        stateData = abi.encode(state);
+                    }
+                    assembly {
+                        bytesWritten := add(bytesWritten, mload(stateData))
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
@@ -74,7 +59,13 @@ library CommandBuilder {
 
                     // Variable length data; put a pointer in the slot and write the data at the end
                     assembly {
+                        bytesWritten := add(bytesWritten, 32)
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                         mstore(add(add(ret, 36), count), free)
+                    }
+                    assembly {
+                        bytesWritten := add(bytesWritten, arglen)
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                     }
                     memcpy(
                         state[idx & IDX_VALUE_MASK],
@@ -90,10 +81,15 @@ library CommandBuilder {
                 // Fixed length data; write it directly
                 bytes memory statevar = state[idx & IDX_VALUE_MASK];
                 assembly {
+                    bytesWritten := add(bytesWritten, mload(statevar))
+                    mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
                 unchecked{count += 32;}
             }
+        }
+        assembly {
+            mstore(ret, bytesWritten)
         }
     }
 
