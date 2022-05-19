@@ -24,13 +24,12 @@ library CommandBuilder {
         }
 
         // Encode it
-        uint256 bytesWritten;
+        uint256 bytesWritten = 4;
         assembly {
             ret := mload(0x40)
-            bytesWritten := add(bytesWritten, 4)
             mstore(add(ret, 32), selector)
         }
-        uint256 count = 0;
+        uint256 count;
         bytes memory stateData; // Optionally encode the current state if the call requires it
         for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
             idx = uint8(indices[i]);
