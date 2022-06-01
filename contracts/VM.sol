@@ -79,13 +79,13 @@ abstract contract VM {
                     )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
-                uint256 calleth;
+                uint256 callEth;
                 bytes memory v = state[uint8(bytes1(indices))];
                 assembly {
-                    mstore(calleth, add(v, 0x20))
+                    callEth := mload(add(v, 0x20))
                 }
                 (success, outdata) = address(uint160(uint256(command))).call{ // target
-                    value: calleth
+                    value: callEth
                 }(
                     // inputs
                     state.buildInputs(
