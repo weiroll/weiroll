@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.11;
 
-uint256 constant IDX_VARIABLE_LENGTH = 0x80;
-uint256 constant IDX_VALUE_MASK = 0x7f;
-uint256 constant IDX_END_OF_ARGS = 0xff;
-uint256 constant IDX_USE_STATE = 0xfe;
-
 library CommandBuilder {
+
+    uint256 constant IDX_VARIABLE_LENGTH = 0x80;
+    uint256 constant IDX_VALUE_MASK = 0x7f;
+    uint256 constant IDX_END_OF_ARGS = 0xff;
+    uint256 constant IDX_USE_STATE = 0xfe;
+
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
@@ -20,7 +21,7 @@ library CommandBuilder {
         uint256 idx;
 
         // Determine the length of the encoded data
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -47,6 +48,7 @@ library CommandBuilder {
                 count += 32;
             }
             unchecked{free += 32;}
+            unchecked{++i;}
         }
 
         // Encode it
@@ -55,7 +57,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -90,6 +92,7 @@ library CommandBuilder {
                 }
             }
             unchecked{count += 32;}
+            unchecked{++i;}
         }
     }
 
@@ -173,10 +176,5 @@ library CommandBuilder {
                 )
             )
         }
-    }
-
-    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
-        unchecked {++i;}
-        return i;
     }
 }
