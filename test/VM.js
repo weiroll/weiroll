@@ -153,6 +153,21 @@ describe("VM", function () {
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
   });
 
+  it("Should sum an array of uints using extended flag", async () => {
+    const planner = new weiroll.Planner();
+    const result = planner.add(math.sumExtended(1, 2, 3, 4, 5, 6, 7));
+    planner.add(events.logUint(result));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state);
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
+      .withArgs(28);
+
+    const receipt = await tx.wait();
+    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
   it("Should pass and return raw state to functions", async () => {
     const commands = [
       [stateTest, "addSlots", "0x00000102feffff", "0xfe"],
