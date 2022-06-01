@@ -22,6 +22,7 @@ library CommandBuilder {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
             unchecked{free += 32;}
+            unchecked{++i;}
         }
 
         // Encode it
@@ -34,7 +35,7 @@ library CommandBuilder {
         }
         uint256 count = 0;
         bytes memory stateData; // Optionally encode the current state if the call requires it
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -87,6 +88,7 @@ library CommandBuilder {
                 }
             }
             unchecked{count += 32;}
+            unchecked{++i;}
         }
         assembly {
             mstore(ret, bytesWritten)
@@ -173,5 +175,10 @@ library CommandBuilder {
                 )
             )
         }
+    }
+
+    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
+        unchecked {++i;}
+        return i;
     }
 }
