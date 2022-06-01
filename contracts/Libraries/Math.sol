@@ -24,4 +24,21 @@ contract Math {
             ret += values[i];
         }
     }
+
+    function sumExtended(
+      uint256 a, 
+      uint256 b,
+      uint256 c,
+      uint256 d,
+      uint256 e,
+      uint256 f,
+      uint256 g // 7 args will trigger extended
+      
+    )
+        external
+        pure
+        returns (uint256 ret)
+    {
+      return a + b + c + d + e + f + g;
+    }
 }
