@@ -62,10 +62,11 @@ library CommandBuilder {
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
+                // Variable length data; put a pointer in the slot and write the data at the end
+                assembly {
+                    mstore(count, free)
+                }
                 if (idx == IDX_USE_STATE) {
-                    assembly {
-                        mstore(add(add(ret, 36), count), free)
-                    }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
                 } else {
