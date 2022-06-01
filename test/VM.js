@@ -8,6 +8,12 @@ async function deployLibrary(name) {
   return weiroll.Contract.createLibrary(contract);
 }
 
+async function deployContract(name) {
+  const factory = await ethers.getContractFactory(name);
+  const contract = await factory.deploy();
+  return weiroll.Contract.createContract(contract);
+}
+
 describe("VM", function () {
   const testString = "Hello, world!";
 
@@ -20,6 +26,7 @@ describe("VM", function () {
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
     revert = await deployLibrary("Revert");
+    receiver = await deployContract("Receiver");
 
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.createLibrary(eventsContract);
@@ -75,7 +82,7 @@ describe("VM", function () {
     }
     planner.add(events.logUint(b));
     const { commands, state } = planner.plan();
-
+    
     const tx = await vm.execute(commands, state);
     await expect(tx)
       .to.emit(eventsContract.attach(vm.address), "LogUint")
@@ -83,6 +90,22 @@ describe("VM", function () {
 
     const receipt = await tx.wait();
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should execute a simple receiver program", async () => {
+    const planner = new weiroll.Planner();
+    const value = 100;
+    const balanceBefore = await ethers.provider.getBalance(receiver.address) 
+    expect(parseInt(balanceBefore)).to.be.equal(0)
+    const ret = planner.add(receiver.receive(value).withValue(value));
+    const { commands, state } = planner.plan();
+    
+    const tx = await vm.execute(commands, state, {value: value});
+    const receipt = await tx.wait();
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+
+    const balanceAfter = await ethers.provider.getBalance(receiver.address) 
+    expect(parseInt(balanceAfter)).to.be.equal(value)
   });
 
   it("Should execute a string length program", async () => {
@@ -125,6 +148,21 @@ describe("VM", function () {
     await expect(tx)
       .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(6);
+
+    const receipt = await tx.wait();
+    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should sum an array of uints using extended flag", async () => {
+    const planner = new weiroll.Planner();
+    const result = planner.add(math.sumExtended(1, 2, 3, 4, 5, 6, 7));
+    planner.add(events.logUint(result));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state);
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
+      .withArgs(28);
 
     const receipt = await tx.wait();
     console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
