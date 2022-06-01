@@ -176,9 +176,4 @@ library CommandBuilder {
             )
         }
     }
-
-    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
-        unchecked {++i;}
-        return i;
-    }
 }
