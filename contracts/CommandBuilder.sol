@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.11;
 
-uint256 constant IDX_VARIABLE_LENGTH = 0x80;
-uint256 constant IDX_VALUE_MASK = 0x7f;
-uint256 constant IDX_END_OF_ARGS = 0xff;
-uint256 constant IDX_USE_STATE = 0xfe;
-
 library CommandBuilder {
+
+    uint256 constant IDX_VARIABLE_LENGTH = 0x80;
+    uint256 constant IDX_VALUE_MASK = 0x7f;
+    uint256 constant IDX_END_OF_ARGS = 0xff;
+    uint256 constant IDX_USE_STATE = 0xfe;
+
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
@@ -17,11 +18,11 @@ library CommandBuilder {
         uint256 idx;
 
         // Determine the length of the encoded data
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
             unchecked{free += 32;}
-        }
+       }
 
         // Encode it
         uint256 bytesWritten = 4;
@@ -29,13 +30,17 @@ library CommandBuilder {
             ret := mload(0x40)
             mstore(add(ret, 32), selector)
         }
-        uint256 count;
         bytes memory stateData; // Optionally encode the current state if the call requires it
-        for (uint256 i; i < 32; i=_uncheckedIncrement(i)) {
+        count = 0;
+        for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
+                // Variable length data; put a pointer in the slot and write the data at the end
+                assembly {
+                    mstore(count, free)
+                }
                 if (idx == IDX_USE_STATE) {
                     assembly {
                         bytesWritten := add(bytesWritten, 32)
@@ -50,9 +55,9 @@ library CommandBuilder {
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
-                    unchecked{count += 32;}
                 } else {
-                    uint256 arglen = state[idx & IDX_VALUE_MASK].length;
+                    bytes memory stateVar = state[idx & IDX_VALUE_MASK];
+                    uint256 arglen = stateVar.length;
 
                     // Variable length data; put a pointer in the slot and write the data at the end
                     assembly {
@@ -61,24 +66,24 @@ library CommandBuilder {
                         bytesWritten := add(bytesWritten, arglen)
                     }
                     memcpy(
-                        state[idx & IDX_VALUE_MASK],
+                        stateVar,
                         0,
                         ret,
                         free + 4,
                         arglen
                     );
                     free += arglen;
-                    unchecked{count += 32;}
                 }
             } else {
                 // Fixed length data; write it directly
-                bytes memory statevar = state[idx & IDX_VALUE_MASK];
+                bytes memory stateVar = state[idx & IDX_VALUE_MASK];
                 assembly {
                     bytesWritten := add(bytesWritten, mload(statevar))
-                    mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    mstore(add(add(ret, 36), count), mload(add(stateVar, 32)))
                 }
-                unchecked{count += 32;}
             }
+            unchecked{count += 32;}
+            unchecked{++i;}
         }
         assembly {
             mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
@@ -154,22 +159,24 @@ library CommandBuilder {
         uint256 destidx,
         uint256 len
     ) internal view {
+        bool success;
         assembly {
-            pop(
-                staticcall(
-                    gas(),
-                    4,
-                    add(add(src, 32), srcidx),
-                    len,
-                    add(add(dest, 32), destidx),
-                    len
-                )
+            success := staticcall(
+                gas(),
+                4,
+                add(add(src, 32), srcidx),
+                len,
+                add(add(dest, 32), destidx),
+                len
             )
         }
-    }
-
-    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
-        unchecked {++i;}
-        return i;
+        if (!success) {
+            assembly {
+                let ptr := mload(0x40)
+                let size := returndatasize()
+                returndatacopy(ptr, 0, size)
+                revert(ptr, size)
+            }
+        }
     }
 }
