@@ -166,17 +166,24 @@ library CommandBuilder {
         uint256 destidx,
         uint256 len
     ) internal view {
+        bool success;
         assembly {
-            pop(
-                staticcall(
-                    gas(),
-                    4,
-                    add(add(src, 32), srcidx),
-                    len,
-                    add(add(dest, 32), destidx),
-                    len
-                )
+            success := staticcall(
+                gas(),
+                4,
+                add(add(src, 32), srcidx),
+                len,
+                add(add(dest, 32), destidx),
+                len
             )
+        }
+        if (!success) {
+            assembly {
+                let ptr := mload(0x40)
+                let size := returndatasize()
+                returndatacopy(ptr, 0, size)
+                revert(ptr, size)
+            }
         }
     }
 }
