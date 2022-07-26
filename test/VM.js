@@ -85,7 +85,7 @@ describe("VM", function () {
   it.only("Should return msg.value", async () => {
     const planner = new weiroll.Planner();
     const amount = ethers.constants.WeiPerEther;
-    planner.add(payable.pay().withValue(amount));
+    //planner.add(payable.pay().withValue(amount));
     const balance = planner.add(payable.getBalance());
     planner.add(events.logUint(balance));
 
