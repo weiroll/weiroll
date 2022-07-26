@@ -82,11 +82,12 @@ describe("VM", function () {
     console.log(`Msg.sender: ${receipt.gasUsed.toNumber()} gas`);
   });
 
-  it("Should return msg.value", async () => {
+  it.only("Should return msg.value", async () => {
     const planner = new weiroll.Planner();
     const amount = ethers.constants.WeiPerEther;
-    const msgValue = planner.add(payable.pay().withValue(amount));
-    planner.add(events.logUint(msgValue));
+    planner.add(payable.pay().withValue(amount));
+    const balance = planner.add(payable.getBalance());
+    planner.add(events.logUint(balance));
 
     const { commands, state } = planner.plan();
 
