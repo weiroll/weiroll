@@ -11,7 +11,17 @@ async function deployLibrary(name) {
 describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, vm, math, strings, stateTest, sender, revert, vmLibrary, token;
+  let events,
+    vm,
+    math,
+    strings,
+    stateTest,
+    sender,
+    payable,
+    data,
+    revert,
+    vmLibrary,
+    token;
   let supply = ethers.BigNumber.from("100000000000000000000");
   let eventsContract;
 
@@ -19,6 +29,7 @@ describe("VM", function () {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
+    payable = await deployContract("Payable");
     revert = await deployLibrary("Revert");
 
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
@@ -64,6 +75,23 @@ describe("VM", function () {
     console.log(`Msg.sender: ${receipt.gasUsed.toNumber()} gas`);
   });
 
+  it("Should return msg.value", async () => {
+    const planner = new weiroll.Planner();
+    const amount = ethers.constants.WeiPerEther;
+    const msgValue = planner.add(payable.pay().withValue(amount));
+    planner.add(events.logUint(msgValue));
+
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state, { value: amount });
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
+      .withArgs(amount);
+
+    const receipt = await tx.wait();
+    console.log(`Msg.value: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
   it("Should execute a simple addition program", async () => {
     const planner = new weiroll.Planner();
     let a = 1,
@@ -83,6 +111,22 @@ describe("VM", function () {
 
     const receipt = await tx.wait();
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should execute a simple receiver program", async () => {
+    const planner = new weiroll.Planner();
+    const value = 100;
+    const balanceBefore = await ethers.provider.getBalance(receiver.address);
+    expect(parseInt(balanceBefore)).to.be.equal(0);
+    const ret = planner.add(receiver.receive(value).withValue(value));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state, { value: value });
+    const receipt = await tx.wait();
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+
+    const balanceAfter = await ethers.provider.getBalance(receiver.address);
+    expect(parseInt(balanceAfter)).to.be.equal(value);
   });
 
   it("Should execute a string length program", async () => {
