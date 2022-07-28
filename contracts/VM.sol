@@ -4,6 +4,8 @@ pragma solidity ^0.8.11;
 
 import "./CommandBuilder.sol";
 
+import "hardhat/console.sol";
+
 abstract contract VM {
     using CommandBuilder for bytes[];
 
@@ -52,6 +54,7 @@ abstract contract VM {
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
+              console.log("debug 0");
                 (success, outdata) = address(uint160(uint256(command))).delegatecall( // target
                     // inputs
                     state.buildInputs(
@@ -60,7 +63,11 @@ abstract contract VM {
                         indices
                     )
                 );
+              console.log("debug 0 after");
             } else if (flags & FLAG_CT_MASK == FLAG_CT_CALL) {
+
+              console.log("debug 1");
+              console.log("vm %s", address(this));
                 (success, outdata) = address(uint160(uint256(command))).call( // target
                     // inputs
                     state.buildInputs(
@@ -70,6 +77,8 @@ abstract contract VM {
                     )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
+
+              console.log("debug 2");
                 (success, outdata) = address(uint160(uint256(command))).staticcall( // target
                     // inputs
                     state.buildInputs(
@@ -79,6 +88,8 @@ abstract contract VM {
                     )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
+
+              console.log("debug 3");
                 uint256 callEth;
                 bytes memory v = state[uint8(bytes1(indices))];
                 require(v.length == 32, "_execute: value call has no value indicated.");

@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
+const { CommandFlags } = weiroll
 
 async function deployLibrary(name) {
   const factory = await ethers.getContractFactory(name);
@@ -35,12 +36,19 @@ describe("VM", function () {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
-    payable = await deployContract("Payable");
+
+    //payable = await deployContract("Payable");
+    payable = await (await ethers.getContractFactory("Payable")).deploy();
+    payable = weiroll.Contract.createContract(payable, 0x00) // delegatecall
+    console.log("debug payable", payable.address)
+   
+
     revert = await deployLibrary("Revert");
     receiver = await deployContract("Receiver");
 
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
-    events = weiroll.Contract.createLibrary(eventsContract);
+    //events = weiroll.Contract.createLibrary(eventsContract);
+    events = weiroll.Contract.createContract(eventsContract);
 
     const StateTest = await ethers.getContractFactory("StateTest");
     stateTest = await StateTest.deploy();
@@ -93,7 +101,8 @@ describe("VM", function () {
 
     const tx = await vm.execute(commands, state, { value: amount });
     await expect(tx)
-      .to.emit(eventsContract.attach(vm.address), "LogUint")
+      //.to.emit(eventsContract.attach(vm.address), "LogUint")
+      .to.emit(eventsContract.attach(events.address), "LogUint")
       .withArgs(amount);
 
     const receipt = await tx.wait();

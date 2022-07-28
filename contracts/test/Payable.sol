@@ -6,7 +6,9 @@ import "hardhat/console.sol";
 contract Payable {
     function pay() public payable {}
 
-    function getBalance() public view returns (uint256) {
+    function getBalance() public payable returns (uint256) {
+      console.log("getBalance");
+      console.log(address(this).balance);
         return address(this).balance;
     }
 }

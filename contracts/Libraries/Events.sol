@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
+import "hardhat/console.sol";
+
 contract Events {
     event LogBytes(bytes message);
     event LogAddress(address message);
@@ -25,6 +27,9 @@ contract Events {
     }
 
     function logUint(uint256 message) external {
+      console.log("logUint");
+      console.log("m %d", message);
+      console.log(address(this));
         emit LogUint(message);
     }
 }
