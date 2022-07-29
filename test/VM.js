@@ -112,12 +112,12 @@ describe("VM", function () {
     );
 
     const commands = [[fallback, "", "0x0100ffffffffff", "0xff"]];
-    const state = [msgData];
+    const state = [ethers.utils.hexZeroPad(msgData, "32")];
 
     const tx = await execute(commands, state, { value: msgValue });
     await expect(tx)
       .to.emit(fallbackContract, "LogBytes")
-      .withArgs(FALLBACK_SELECTOR);
+      .withArgs(ethers.utils.hexZeroPad(msgData, "36"));
 
     const receipt = await tx.wait();
     console.log(`fallback: ${receipt.gasUsed.toNumber()} gas`);

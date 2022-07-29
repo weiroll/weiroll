@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 
 import "./CommandBuilder.sol";
 
-
 abstract contract VM {
     using CommandBuilder for bytes[];
 
@@ -16,7 +15,8 @@ abstract contract VM {
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
     uint256 constant FLAG_TUPLE_RETURN = 0x40;
 
-    uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    uint256 constant SHORT_COMMAND_FILL =
+        0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
     address immutable self;
 
@@ -31,7 +31,8 @@ abstract contract VM {
     }
 
     function _execute(bytes32[] calldata commands, bytes[] memory state)
-      internal returns (bytes[] memory)
+        internal
+        returns (bytes[] memory)
     {
         bytes32 command;
         uint256 flags;
@@ -41,7 +42,7 @@ abstract contract VM {
         bytes memory outdata;
 
         uint256 commandsLength = commands.length;
-        for (uint256 i; i < commandsLength; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < commandsLength; i = _uncheckedIncrement(i)) {
             command = commands[i];
             flags = uint256(uint8(bytes1(command << 32)));
 
@@ -52,31 +53,21 @@ abstract contract VM {
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
-                (success, outdata) = address(uint160(uint256(command))).delegatecall( // target
+                (success, outdata) = address(uint160(uint256(command)))
+                    .delegatecall( // target
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
+                    state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_CALL) {
                 (success, outdata) = address(uint160(uint256(command))).call( // target
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
+                    state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
-                (success, outdata) = address(uint160(uint256(command))).staticcall( // target
+                (success, outdata) = address(uint160(uint256(command)))
+                    .staticcall( // target
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
+                    state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
                 uint256 calleth;
@@ -88,11 +79,15 @@ abstract contract VM {
                     value: calleth
                 }(
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        bytes32(uint256(indices << 8) | CommandBuilder.IDX_END_OF_ARGS)
-                    )
+                    bytes4(command) == 0 && bytes1(indices << 8) != 0xff
+                        ? state[uint8(bytes1(indices << 1))]
+                        : state.buildInputs(
+                            bytes4(command),
+                            bytes32(
+                                uint256(indices << 8) |
+                                    CommandBuilder.IDX_END_OF_ARGS
+                            )
+                        )
                 );
             } else {
                 revert("Invalid calltype");
@@ -120,9 +115,10 @@ abstract contract VM {
         return state;
     }
 
-    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
-        unchecked {++i;}
+    function _uncheckedIncrement(uint256 i) private pure returns (uint256) {
+        unchecked {
+            ++i;
+        }
         return i;
     }
 }
-
