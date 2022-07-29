@@ -27,4 +27,8 @@ contract Events {
     function logUint(uint256 message) external {
         emit LogUint(message);
     }
+
+    function logUintPayable(uint256 message) external payable {
+        emit LogUint(message);
+    }
 }

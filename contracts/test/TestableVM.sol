@@ -5,7 +5,10 @@ import "../VM.sol";
 
 contract TestableVM is VM {
     function execute(bytes32[] calldata commands, bytes[] memory state)
-      public returns (bytes[] memory) {
+        public
+        payable
+        returns (bytes[] memory)
+    {
         return _execute(commands, state);
     }
 }
