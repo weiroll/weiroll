@@ -79,15 +79,10 @@ abstract contract VM {
                     value: calleth
                 }(
                     // inputs
-                    bytes4(command) == 0 && bytes1(indices << 8) != 0xff
-                        ? state[uint8(bytes1(indices << 1))]
-                        : state.buildInputs(
-                            bytes4(command),
-                            bytes32(
-                                uint256(indices << 8) |
-                                    CommandBuilder.IDX_END_OF_ARGS
-                            )
-                        )
+                    state.buildInputs(
+                        bytes4(command),
+                        indices << 8 // skip value input
+                    )
                 );
             } else {
                 revert("Invalid calltype");
@@ -100,7 +95,7 @@ abstract contract VM {
                     }
                 }
                 revert ExecutionFailed({
-                    command_index: 0,
+                    command_index: i,
                     target: address(uint160(uint256(command))),
                     message: outdata.length > 0 ? string(outdata) : "Unknown"
                 });
