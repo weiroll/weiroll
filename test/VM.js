@@ -10,9 +10,8 @@ const deployLibrary = async (name) =>
 const deployContract = async (name) =>
   weiroll.Contract.createContract(await deploy(name));
 
-const appendDecimals = (amount) => ethers.utils.parseEther(amount.toString());
-
 describe("VM", function () {
+  const fallBackSelector = ethers.utils.hexZeroPad(0, 4);
   const testString = "Hello, world!";
 
   let events,
@@ -31,7 +30,7 @@ describe("VM", function () {
   before(async () => {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
-    sender = await deployContract("Sender");
+    sender = await deployLibrary("Sender");
     revert = await deployLibrary("Revert");
     payable = await deployContract("Payable");
     stateTest = await deployContract("StateTest");
@@ -52,12 +51,10 @@ describe("VM", function () {
     ).deploy(supply);
   });
 
-  const FALLBACK_SELECTOR = "0x00000000";
-
   function execute(commands, state, overrides) {
     let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
       ethers.utils.concat([
-        func ? target.interface.getSighash(func) : FALLBACK_SELECTOR,
+        func ? target.interface.getSighash(func) : fallBackSelector,
         inargs,
         outargs,
         target.address,
@@ -77,10 +74,23 @@ describe("VM", function () {
     const tx = await vm.execute(commands, state);
     await expect(tx)
       .to.emit(eventsContract.attach(vm.address), "LogAddress")
-      .withArgs(vm.address);
+      .withArgs(caller.address);
 
     const receipt = await tx.wait();
     console.log(`Msg.sender: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should call fallback", async () => {
+    const commands = [[fallback, "", "0x01ffffffffffff", "0xff"]];
+    const state = [];
+
+    const tx = await execute(commands, state);
+    await expect(tx)
+      .to.emit(fallbackContract, "LogBytes")
+      .withArgs(fallBackSelector);
+
+    const receipt = await tx.wait();
+    console.log(`fallback: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should call fallback with overriden msg.data and msg.value", async () => {
@@ -103,24 +113,6 @@ describe("VM", function () {
     console.log(
       `fallback (override msg.value & msg.data): ${receipt.gasUsed.toNumber()} gas`
     );
-  });
-
-  it("Should call fallback", async () => {
-    const msgValue = ethers.constants.WeiPerEther;
-    const msgData = ethers.utils.hexlify(
-      ethers.utils.toUtf8Bytes("Hello World!")
-    );
-
-    const commands = [[fallback, "", "0x0100ffffffffff", "0xff"]];
-    const state = [ethers.utils.hexZeroPad(msgData, "32")];
-
-    const tx = await execute(commands, state, { value: msgValue });
-    await expect(tx)
-      .to.emit(fallbackContract, "LogBytes")
-      .withArgs(ethers.utils.hexZeroPad(msgData, "36"));
-
-    const receipt = await tx.wait();
-    console.log(`fallback: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should call function named fallback with msg.value", async () => {
@@ -208,18 +200,18 @@ describe("VM", function () {
   });
 
   it("Should execute payable function", async () => {
-    const amount = appendDecimals(123);
+    const amount = ethers.constants.WeiPerEther.mul(123);
     const planner = new weiroll.Planner();
 
     planner.add(payable.pay().withValue(amount));
     const balance = planner.add(payable.balance());
-    planner.add(events.logUintPayable(balance));
+    planner.add(
+      weiroll.Contract.createContract(eventsContract).logUint(balance)
+    );
     const { commands, state } = planner.plan();
 
     const tx = await vm.execute(commands, state, { value: amount });
-    await expect(tx)
-      .to.emit(eventsContract.attach(vm.address), "LogUint")
-      .withArgs(amount);
+    await expect(tx).to.emit(eventsContract, "LogUint").withArgs(amount);
     expect(await ethers.provider.getBalance(payable.address)).to.be.equal(
       amount
     );
