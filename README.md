@@ -75,9 +75,9 @@ Each 1-byte argument specifier value describes how each input or output argument
 └───┴───────────────────────────┘
 ```
 
-The `var` flag indicates if the indexed value should be treated as fixed- or variable-length. If `var == 0b`, the argument is fixed-length, and `idx`, is treated as the index into the state array at which the value is located. The state entry at that index must be exactly 32 bytes long.
+The `var` flag indicates if the indexed value should be treated as fixed- or variable-length. If `var == 0b`, the argument is fixed-length, and `idx`, is treated as the index into the state array at which the value is located. The state entry at that index must be exactly 32 bytes long (except when calling the fallback function).
 
-If `var == 1b`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long.
+If `var == 1b`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long (except when calling the fallback function).
 
 The vm handles the "head" part of ABI-encoding and decoding for variable-length values, so the state elements for these should be the "tail" part of the encoding - for example, a string encodes as a 32 byte length field followed by the string data, padded to a 32-byte boundary, and an array of `uint`s is a 32 byte count followed by the concatenation of all the uints.
 
