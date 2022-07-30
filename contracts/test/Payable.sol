@@ -7,8 +7,4 @@ contract Payable {
     function balance() external view returns (uint256) {
         return address(this).balance;
     }
-
-    receive() external payable {}
-
-    fallback() external payable {}
 }
