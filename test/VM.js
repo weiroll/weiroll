@@ -8,12 +8,16 @@ async function deployLibrary(name) {
   return weiroll.Contract.createLibrary(contract);
 }
 
-const appendDecimals = (amount) => ethers.utils.parseEther(amount.toString());
+async function deployContract(name) {
+  const factory = await ethers.getContractFactory(name);
+  const contract = await factory.deploy();
+  return weiroll.Contract.createContract(contract);
+}
 
 describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, vm, math, strings, stateTest, sender, revert, vmLibrary, token, payable;
+  let events, vm, math, strings, stateTest, sender, revert, token, payable;
   let supply = ethers.BigNumber.from("100000000000000000000");
   let eventsContract;
 
@@ -22,6 +26,7 @@ describe("VM", function () {
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
     revert = await deployLibrary("Revert");
+    receiver = await deployContract("Receiver");
 
     const payableContract = await (
       await ethers.getContractFactory("Payable")
@@ -92,6 +97,22 @@ describe("VM", function () {
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
   });
 
+  it("Should execute a simple receiver program", async () => {
+    const planner = new weiroll.Planner();
+    const value = 100;
+    const balanceBefore = await ethers.provider.getBalance(receiver.address);
+    expect(parseInt(balanceBefore)).to.be.equal(0);
+    const ret = planner.add(receiver.receive(value).withValue(value));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state, { value: value });
+    const receipt = await tx.wait();
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+
+    const balanceAfter = await ethers.provider.getBalance(receiver.address);
+    expect(parseInt(balanceAfter)).to.be.equal(value);
+  });
+
   it("Should execute a string length program", async () => {
     const planner = new weiroll.Planner();
     const len = planner.add(strings.strlen(testString));
@@ -138,7 +159,7 @@ describe("VM", function () {
   });
 
   it("Should execute payable function", async () => {
-    const amount = appendDecimals(123);
+    const amount = ethers.constants.WeiPerEther.mul(123);
     const planner = new weiroll.Planner();
 
     planner.add(payable.pay().withValue(amount));
@@ -150,10 +171,27 @@ describe("VM", function () {
     await expect(tx)
       .to.emit(eventsContract.attach(vm.address), "LogUint")
       .withArgs(amount);
-    expect(await ethers.provider.getBalance(payable.address)).to.be.equal(amount);
+    expect(await ethers.provider.getBalance(payable.address)).to.be.equal(
+      amount
+    );
 
     const receipt = await tx.wait();
     console.log(`Payable: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should sum an array of uints using extended flag", async () => {
+    const planner = new weiroll.Planner();
+    const result = planner.add(math.sumExtended(1, 2, 3, 4, 5, 6, 7));
+    planner.add(events.logUint(result));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state);
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
+      .withArgs(28);
+
+    const receipt = await tx.wait();
+    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should pass and return raw state to functions", async () => {
