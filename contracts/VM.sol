@@ -12,8 +12,8 @@ abstract contract VM {
     uint256 constant FLAG_CT_STATICCALL = 0x02;
     uint256 constant FLAG_CT_VALUECALL = 0x03;
     uint256 constant FLAG_CT_MASK = 0x03;
-    uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
-    uint256 constant FLAG_TUPLE_RETURN = 0x40;
+    uint256 constant FLAG_EXTENDED_COMMAND = 0x40;
+    uint256 constant FLAG_TUPLE_RETURN = 0x80;
 
     uint256 constant SHORT_COMMAND_FILL =
         0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
@@ -44,10 +44,11 @@ abstract contract VM {
         uint256 commandsLength = commands.length;
         for (uint256 i; i < commandsLength; i = _uncheckedIncrement(i)) {
             command = commands[i];
-            flags = uint256(uint8(bytes1(command << 32)));
+            flags = uint256(command >> 216) & 0xFF; // more efficient
+            // flags = uint256(uint8(bytes1(command << 32))); // more readable 
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
+                indices = commands[++i];
             } else {
                 indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
             }
@@ -70,13 +71,14 @@ abstract contract VM {
                     state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
-                uint256 calleth;
+                uint256 callEth;
                 bytes memory v = state[uint8(bytes1(indices))];
+                require(v.length == 32, "_execute: value call has no value indicated.");
                 assembly {
-                    calleth := mload(add(v, 0x20))
+                    callEth := mload(add(v, 0x20))
                 }
                 (success, outdata) = address(uint160(uint256(command))).call{ // target
-                    value: calleth
+                    value: callEth
                 }(
                     // inputs
                     state.buildInputs(
@@ -106,6 +108,7 @@ abstract contract VM {
             } else {
                 state = state.writeOutputs(bytes1(command << 88), outdata);
             }
+            unchecked{++i;}
         }
         return state;
     }

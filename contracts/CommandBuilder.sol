@@ -61,8 +61,11 @@ library CommandBuilder {
         }
 
         // Encode it
-        ret = new bytes(count + 4);
+        uint256 bytesWritten;
         assembly {
+            ret := mload(0x40)
+            bytesWritten := add(bytesWritten, 4)
+            mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
             mstore(add(ret, 32), selector)
         }
         count = 0;
@@ -73,19 +76,35 @@ library CommandBuilder {
             if (idx & IDX_VARIABLE_LENGTH != 0) {
                 if (idx == IDX_USE_STATE) {
                     assembly {
+                        bytesWritten := add(bytesWritten, 32)
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                         mstore(add(add(ret, 36), count), free)
+                    }
+                    if (stateData.length == 0) {
+                        stateData = abi.encode(state);
+                    }
+                    assembly {
+                        bytesWritten := add(bytesWritten, mload(stateData))
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
                 } else {
-                    uint256 arglen = state[idx & IDX_VALUE_MASK].length;
+                    bytes memory stateVar = state[idx & IDX_VALUE_MASK];
+                    uint256 arglen = stateVar.length;
 
                     // Variable length data; put a pointer in the slot and write the data at the end
                     assembly {
+                        bytesWritten := add(bytesWritten, 32)
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
                         mstore(add(add(ret, 36), count), free)
                     }
+                    assembly {
+                        bytesWritten := add(bytesWritten, arglen)
+                        mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
+                    }
                     memcpy(
-                        state[idx & IDX_VALUE_MASK],
+                        stateVar,
                         0,
                         ret,
                         free + 4,
@@ -95,9 +114,11 @@ library CommandBuilder {
                 }
             } else {
                 // Fixed length data; write it directly
-                bytes memory statevar = state[idx & IDX_VALUE_MASK];
+                bytes memory stateVar = state[idx & IDX_VALUE_MASK];
                 assembly {
-                    mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    bytesWritten := add(bytesWritten, mload(stateVar))
+                    mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
+                    mstore(add(add(ret, 36), count), mload(add(stateVar, 32)))
                 }
             }
             unchecked {
@@ -106,6 +127,9 @@ library CommandBuilder {
             unchecked {
                 ++i;
             }
+        }
+        assembly {
+            mstore(ret, bytesWritten)
         }
     }
 

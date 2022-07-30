@@ -34,6 +34,7 @@ describe("VM", function () {
     revert = await deployLibrary("Revert");
     payable = await deployContract("Payable");
     stateTest = await deployContract("StateTest");
+    receiver = await deployContract("Receiver");
 
     fallbackContract = await (
       await ethers.getContractFactory("Fallback")
@@ -152,6 +153,22 @@ describe("VM", function () {
     console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
   });
 
+  it("Should execute a simple receiver program", async () => {
+    const planner = new weiroll.Planner();
+    const value = 100;
+    const balanceBefore = await ethers.provider.getBalance(receiver.address);
+    expect(parseInt(balanceBefore)).to.be.equal(0);
+    const ret = planner.add(receiver.receive(value).withValue(value));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state, { value: value });
+    const receipt = await tx.wait();
+    console.log(`Array sum: ${receipt.gasUsed.toNumber()} gas`);
+
+    const balanceAfter = await ethers.provider.getBalance(receiver.address);
+    expect(parseInt(balanceAfter)).to.be.equal(value);
+  });
+
   it("Should execute a string length program", async () => {
     const planner = new weiroll.Planner();
     const len = planner.add(strings.strlen(testString));
@@ -209,6 +226,7 @@ describe("VM", function () {
     const { commands, state } = planner.plan();
 
     const tx = await vm.execute(commands, state, { value: amount });
+    
     await expect(tx).to.emit(eventsContract, "LogUint").withArgs(amount);
     expect(await ethers.provider.getBalance(payable.address)).to.be.equal(
       amount
@@ -216,6 +234,21 @@ describe("VM", function () {
 
     const receipt = await tx.wait();
     console.log(`Payable: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should sum an array of uints using extended flag", async () => {
+    const planner = new weiroll.Planner();
+    const result = planner.add(math.sumExtended(1, 2, 3, 4, 5, 6, 7));
+    planner.add(events.logUint(result));
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state);
+    await expect(tx)
+      .to.emit(eventsContract.attach(vm.address), "LogUint")
+      .withArgs(28);
+
+    const receipt = await tx.wait();
+    console.log(`String concatenation: ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should pass and return raw state to functions", async () => {
