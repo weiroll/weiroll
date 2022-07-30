@@ -3,7 +3,6 @@
 pragma solidity ^0.8.11;
 
 library CommandBuilder {
-
     uint256 constant IDX_VARIABLE_LENGTH = 0x80;
     uint256 constant IDX_VALUE_MASK = 0x7f;
     uint256 constant IDX_END_OF_ARGS = 0xff;
@@ -14,15 +13,51 @@ library CommandBuilder {
         bytes4 selector,
         bytes32 indices
     ) internal view returns (bytes memory ret) {
-        uint256 free; // Pointer to first free byte in tail part of message
         uint256 idx;
 
+        // check fallback call
+        if (selector == 0) {
+            idx = uint8(bytes1(indices));
+            if (idx != IDX_END_OF_ARGS) return state[idx % 2**7]; // skip var bit to get index
+        }
+
+        uint256 count; // Number of bytes in whole ABI encoded message
+        uint256 free; // Pointer to first free byte in tail part of message
+        bytes memory stateData; // Optionally encode the current state if the call requires it
+
         // Determine the length of the encoded data
-        for (uint256 i; i < 32;) {
+        for (uint256 i; i < 32; ) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
-            unchecked{free += 32;}
-            unchecked{++i;}
+
+            if (idx & IDX_VARIABLE_LENGTH != 0) {
+                if (idx == IDX_USE_STATE) {
+                    if (stateData.length == 0) {
+                        stateData = abi.encode(state);
+                    }
+                    count += stateData.length;
+                } else {
+                    // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
+                    uint256 arglen = state[idx & IDX_VALUE_MASK].length;
+                    require(
+                        arglen % 32 == 0,
+                        "Dynamic state variables must be a multiple of 32 bytes"
+                    );
+                    count += arglen + 32;
+                }
+            } else {
+                require(
+                    state[idx & IDX_VALUE_MASK].length == 32,
+                    "Static state variables must be 32 bytes"
+                );
+                count += 32;
+            }
+            unchecked {
+                free += 32;
+            }
+            unchecked {
+                ++i;
+            }
         }
 
         // Encode it
@@ -33,9 +68,8 @@ library CommandBuilder {
             mstore(0x40, add(ret, and(add(add(bytesWritten, 0x20), 0x1f), not(0x1f))))
             mstore(add(ret, 32), selector)
         }
-        uint256 count = 0;
-        bytes memory stateData; // Optionally encode the current state if the call requires it
-        for (uint256 i; i < 32;) {
+        count = 0;
+        for (uint256 i; i < 32; ) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -87,8 +121,12 @@ library CommandBuilder {
                     mstore(add(add(ret, 36), count), mload(add(stateVar, 32)))
                 }
             }
-            unchecked{count += 32;}
-            unchecked{++i;}
+            unchecked {
+                count += 32;
+            }
+            unchecked {
+                ++i;
+            }
         }
         assembly {
             mstore(ret, bytesWritten)

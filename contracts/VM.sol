@@ -15,7 +15,8 @@ abstract contract VM {
     uint256 constant FLAG_EXTENDED_COMMAND = 0x40;
     uint256 constant FLAG_TUPLE_RETURN = 0x80;
 
-    uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    uint256 constant SHORT_COMMAND_FILL =
+        0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
     address immutable self;
 
@@ -30,7 +31,8 @@ abstract contract VM {
     }
 
     function _execute(bytes32[] calldata commands, bytes[] memory state)
-      internal returns (bytes[] memory)
+        internal
+        returns (bytes[] memory)
     {
         bytes32 command;
         uint256 flags;
@@ -40,7 +42,7 @@ abstract contract VM {
         bytes memory outdata;
 
         uint256 commandsLength = commands.length;
-        for (uint256 i; i < commandsLength;) {
+        for (uint256 i; i < commandsLength; i = _uncheckedIncrement(i)) {
             command = commands[i];
             flags = uint256(command >> 216) & 0xFF; // more efficient
             // flags = uint256(uint8(bytes1(command << 32))); // more readable 
@@ -52,31 +54,21 @@ abstract contract VM {
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
-                (success, outdata) = address(uint160(uint256(command))).delegatecall( // target
+                (success, outdata) = address(uint160(uint256(command)))
+                    .delegatecall( // target
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
+                    state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_CALL) {
                 (success, outdata) = address(uint160(uint256(command))).call( // target
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
+                    state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
-                (success, outdata) = address(uint160(uint256(command))).staticcall( // target
+                (success, outdata) = address(uint160(uint256(command)))
+                    .staticcall( // target
                     // inputs
-                    state.buildInputs(
-                        //selector
-                        bytes4(command),
-                        indices
-                    )
+                    state.buildInputs(bytes4(command), indices)
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
                 uint256 callEth;
@@ -90,9 +82,8 @@ abstract contract VM {
                 }(
                     // inputs
                     state.buildInputs(
-                        //selector
                         bytes4(command),
-                        bytes32(uint256(indices << 8) | CommandBuilder.IDX_END_OF_ARGS)
+                        indices << 8 // skip value input
                     )
                 );
             } else {
@@ -106,7 +97,7 @@ abstract contract VM {
                     }
                 }
                 revert ExecutionFailed({
-                    command_index: 0,
+                    command_index: i,
                     target: address(uint160(uint256(command))),
                     message: outdata.length > 0 ? string(outdata) : "Unknown"
                 });
@@ -120,5 +111,12 @@ abstract contract VM {
             unchecked{++i;}
         }
         return state;
+    }
+
+    function _uncheckedIncrement(uint256 i) private pure returns (uint256) {
+        unchecked {
+            ++i;
+        }
+        return i;
     }
 }
