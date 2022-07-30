@@ -95,9 +95,7 @@ describe("VM", function () {
 
   it("Should call fallback with overriden msg.data and msg.value", async () => {
     const msgValue = ethers.constants.WeiPerEther;
-    const msgData = ethers.utils.hexlify(
-      ethers.utils.toUtf8Bytes("Hello World!")
-    );
+    const msgData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(testString));
 
     const commands = [[fallback, "", "0x030081ffffffff", "0xff"]];
     const state = [
@@ -119,7 +117,7 @@ describe("VM", function () {
     const planner = new weiroll.Planner();
 
     const msgValue = ethers.constants.WeiPerEther;
-    const data = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Hello World!"));
+    const data = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(testString));
 
     planner.add(fallback.fallback(data).withValue(msgValue));
 
