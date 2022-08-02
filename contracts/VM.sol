@@ -53,22 +53,31 @@ abstract contract VM {
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
-                (success, outdata) = address(uint160(uint256(command)))
-                    .delegatecall( // target
-                    // inputs
-                    state.buildInputs(bytes4(command), indices)
-                );
+                (success, outdata) = address(uint160(uint256(command))) // target
+                    .delegatecall(
+                        // inputs
+                        state.buildInputs(
+                            bytes4(command), // selector
+                            indices
+                        )
+                    );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_CALL) {
                 (success, outdata) = address(uint160(uint256(command))).call( // target
                     // inputs
-                    state.buildInputs(bytes4(command), indices)
+                    state.buildInputs(
+                        bytes4(command), // selector
+                        indices
+                    )
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_STATICCALL) {
-                (success, outdata) = address(uint160(uint256(command)))
-                    .staticcall( // target
-                    // inputs
-                    state.buildInputs(bytes4(command), indices)
-                );
+                (success, outdata) = address(uint160(uint256(command))) // target
+                    .staticcall(
+                        // inputs
+                        state.buildInputs(
+                            bytes4(command), // selector
+                            indices
+                        )
+                    );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
                 uint256 calleth;
                 bytes memory v = state[uint8(bytes1(indices))];
