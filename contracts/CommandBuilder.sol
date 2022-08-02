@@ -18,7 +18,7 @@ library CommandBuilder {
         // check fallback call
         if (selector == 0) {
             idx = uint8(bytes1(indices));
-            if (idx != IDX_END_OF_ARGS) return state[idx % 2**7]; // skip var bit to get index
+            if (idx != IDX_END_OF_ARGS) return state[idx & IDX_VALUE_MASK];
         }
 
         uint256 count; // Number of bytes in whole ABI encoded message
