@@ -11,7 +11,6 @@ const deployContract = async (name) =>
   weiroll.Contract.createContract(await deploy(name));
 
 describe("VM", function () {
-  const fallBackSelector = ethers.utils.hexZeroPad(0, 4);
   const testString = "Hello, world!";
 
   let events,
@@ -54,7 +53,7 @@ describe("VM", function () {
   function execute(commands, state, overrides) {
     let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
       ethers.utils.concat([
-        func ? target.interface.getSighash(func) : fallBackSelector,
+        func ? target.interface.getSighash(func) : "0x12345678",
         inargs,
         outargs,
         target.address,
@@ -81,13 +80,11 @@ describe("VM", function () {
   });
 
   it("Should call fallback", async () => {
-    const commands = [[fallback, "", "0x01ffffffffffff", "0xff"]];
-    const state = [];
+    const commands = [[fallback, "", "0x2180ffffffffff", "0xff"]];
+    const state = ["0x"];
 
     const tx = await execute(commands, state);
-    await expect(tx)
-      .to.emit(fallbackContract, "LogBytes")
-      .withArgs(fallBackSelector);
+    await expect(tx).to.not.emit(fallbackContract, "LogBytes");
 
     const receipt = await tx.wait();
     console.log(`fallback: ${receipt.gasUsed.toNumber()} gas`);
@@ -97,7 +94,7 @@ describe("VM", function () {
     const msgValue = ethers.constants.WeiPerEther;
     const msgData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(testString));
 
-    const commands = [[fallback, "", "0x030081ffffffff", "0xff"]];
+    const commands = [[fallback, "", "0x230081ffffffff", "0xff"]];
     const state = [
       ethers.utils.hexZeroPad(msgValue.toHexString(), "32"),
       msgData,
