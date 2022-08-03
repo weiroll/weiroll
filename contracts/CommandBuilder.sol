@@ -15,12 +15,6 @@ library CommandBuilder {
     ) internal view returns (bytes memory ret) {
         uint256 idx;
 
-        // check fallback call
-        if (selector == 0) {
-            idx = uint8(bytes1(indices));
-            if (idx != IDX_END_OF_ARGS) return state[idx & IDX_VALUE_MASK];
-        }
-
         uint256 count; // Number of bytes in whole ABI encoded message
         uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
