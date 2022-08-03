@@ -107,7 +107,7 @@ function add(uint a, uint b) external returns (uint);
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
 
-`f` should specify this is a delegatecall (`0x00`), `in` needs to specify two input values of fixed length (`var == 0b`). The remaining four input parameters are unneeded and should be set to `0xff`. Supposing the two inputs should come from state elements 0 and 1, the encoded `in` data is thus `0x000001ffffffff`.
+`f` should specify this is a delegatecall (`0x00`), `in` needs to specify two input values of fixed length (`var == 0b`). The remaining four input parameters are unneeded and should be set to `0xff`. Supposing the two inputs should come from state elements 0 and 1, the encoded `in` data is thus `0x0001ffffffff`.
 
 `out` needs to specify that the output value is fixed length (`var == 0b`). Supposing the output should be written to state element 2, the encoded `out` data is thus `0x02`.
 
@@ -121,7 +121,7 @@ function concatBytes32(bytes32[] inputs) external returns (bytes);
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
 
-`f` should specify this is a delegatecall (`0x00`), `in` needs to specify one input value of variable length (`var == 1b`), that is an array of 32-byte words (`ws == 1b`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0x00c0ffffffffff`.
+`f` should specify this is a delegatecall (`0x00`), `in` needs to specify one input value of variable length (`var == 1b`), that is an array of 32-byte words (`ws == 1b`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0xc0ffffffffff`.
 
 `out` needs to specify that the output value is variable length (`var == 1b`). Supposing the output value should be written to state element 1, the encoded `out` data is thus `0x81`.
 
