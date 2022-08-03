@@ -36,16 +36,18 @@ The 1-byte flags argument `f` has the following field structure:
 
 ```
   0   1   2   3   4   5   6   7
-┌───┬───┬───────────────┬────────┐
-│tup│ext│   reserved    │calltype│
-└───┴───┴───────────────┴────────┘
+┌───┬───┬───┬───────────┬────────┐
+│tup│ext│flb│ reserved  │calltype│
+└───┴───┴───┴───────────┴────────┘
 ```
 
 If `tup` is set, the return for this command will be assigned to the state slot directly, without any attempt at processing or decoding.
 
 The `ext` bit signifies that this is an extended command, and as such the next command should be treated as 32-byte `in` list of indices, rather than the 6-byte list in the packed command struct.
 
-Bits 2-5 are reserved for future use.
+If `flb` is set, the fallback function will be called and the msg.data will be assigned from the state slot directly, without any attempt at encoding.
+
+Bits 3-5 are reserved for future use.
 
 The 2-bit `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
 
