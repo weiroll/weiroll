@@ -14,7 +14,7 @@ abstract contract VM {
     uint256 constant FLAG_CT_MASK = 0x03;
     uint256 constant FLAG_TUPLE_RETURN = 0x80;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x40;
-    uint256 constant FLAG_FALLBACK = 0x20;
+    uint256 constant FLAG_DATA = 0x20;
 
     uint256 constant SHORT_COMMAND_FILL =
         0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
@@ -57,7 +57,7 @@ abstract contract VM {
                 (success, outdata) = address(uint160(uint256(command))) // target
                     .delegatecall(
                         // inputs
-                        flags & FLAG_FALLBACK == 0
+                        flags & FLAG_DATA == 0
                             ? state.buildInputs(
                                 bytes4(command), // selector
                                 indices
@@ -70,7 +70,7 @@ abstract contract VM {
             } else if (flags & FLAG_CT_MASK == FLAG_CT_CALL) {
                 (success, outdata) = address(uint160(uint256(command))).call( // target
                     // inputs
-                    flags & FLAG_FALLBACK == 0
+                    flags & FLAG_DATA == 0
                         ? state.buildInputs(
                             bytes4(command), // selector
                             indices
@@ -84,7 +84,7 @@ abstract contract VM {
                 (success, outdata) = address(uint160(uint256(command))) // target
                     .staticcall(
                         // inputs
-                        flags & FLAG_FALLBACK == 0
+                        flags & FLAG_DATA == 0
                             ? state.buildInputs(
                                 bytes4(command), // selector
                                 indices
@@ -104,7 +104,7 @@ abstract contract VM {
                     value: calleth
                 }(
                     // inputs
-                    flags & FLAG_FALLBACK == 0
+                    flags & FLAG_DATA == 0
                         ? state.buildInputs(
                             bytes4(command), // selector
                             indices << 8 // skip value input
