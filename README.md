@@ -36,16 +36,18 @@ The 1-byte flags argument `f` has the following field structure:
 
 ```
   0   1   2   3   4   5   6   7
-┌───┬───┬───────────────┬────────┐
-│tup│ext│   reserved    │calltype│
-└───┴───┴───────────────┴────────┘
+┌───┬───┬───┬───────────┬────────┐
+│tup│ext│dat│ reserved  │calltype│
+└───┴───┴───┴───────────┴────────┘
 ```
 
 If `tup` is set, the return for this command will be assigned to the state slot directly, without any attempt at processing or decoding.
 
 The `ext` bit signifies that this is an extended command, and as such the next command should be treated as 32-byte `in` list of indices, rather than the 6-byte list in the packed command struct.
 
-Bits 2-5 are reserved for future use.
+If `dat` is set, the msg.data will be assigned from the state slot directly, without any attempt at encoding.
+
+Bits 3-5 are reserved for future use.
 
 The 2-bit `calltype` is treated as a `uint16` that specifies the type of call. The value that selects the corresponding call type is described in the table below:
 
@@ -75,9 +77,9 @@ Each 1-byte argument specifier value describes how each input or output argument
 └───┴───────────────────────────┘
 ```
 
-The `var` flag indicates if the indexed value should be treated as fixed- or variable-length. If `var == 0b0`, the argument is fixed-length, and `idx`, is treated as the index into the state array at which the value is located. The state entry at that index must be exactly 32 bytes long.
+The `var` flag indicates if the indexed value should be treated as fixed- or variable-length. If `var == 0b0`, the argument is fixed-length, and `idx`, is treated as the index into the state array at which the value is located. The state entry at that index must be exactly 32 bytes long (except if overriding msg.data directly via `dat` flag).
 
-If `var == 0b10000000`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long.
+If `var == 0b10000000`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long (except if overriding msg.data directly via `dat` flag).
 
 The vm handles the "head" part of ABI-encoding and decoding for variable-length values, so the state elements for these should be the "tail" part of the encoding - for example, a string encodes as a 32 byte length field followed by the string data, padded to a 32-byte boundary, and an array of `uint`s is a 32 byte count followed by the concatenation of all the uints.
 

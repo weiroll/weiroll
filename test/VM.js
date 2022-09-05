@@ -2,37 +2,45 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const weiroll = require("@weiroll/weiroll.js");
 
-async function deployLibrary(name) {
-  const factory = await ethers.getContractFactory(name);
-  const contract = await factory.deploy();
-  return weiroll.Contract.createLibrary(contract);
-}
+const deploy = async (name) => (await ethers.getContractFactory(name)).deploy();
 
-const appendDecimals = (amount) => ethers.utils.parseEther(amount.toString());
+const deployLibrary = async (name) =>
+  weiroll.Contract.createLibrary(await deploy(name));
+
+const deployContract = async (name) =>
+  weiroll.Contract.createContract(await deploy(name));
 
 describe("VM", function () {
   const testString = "Hello, world!";
 
-  let events, vm, math, strings, stateTest, sender, revert, vmLibrary, token, payable;
+  let events,
+    vm,
+    math,
+    strings,
+    stateTest,
+    sender,
+    revert,
+    fallback,
+    token,
+    payable;
   let supply = ethers.BigNumber.from("100000000000000000000");
-  let eventsContract;
+  let eventsContract, fallbackContract;
 
   before(async () => {
     math = await deployLibrary("Math");
     strings = await deployLibrary("Strings");
     sender = await deployLibrary("Sender");
     revert = await deployLibrary("Revert");
+    payable = await deployContract("Payable");
+    stateTest = await deployContract("StateTest");
 
-    const payableContract = await (
-      await ethers.getContractFactory("Payable")
+    fallbackContract = await (
+      await ethers.getContractFactory("Fallback")
     ).deploy();
-    payable = weiroll.Contract.createContract(payableContract);
+    fallback = weiroll.Contract.createContract(fallbackContract);
 
     eventsContract = await (await ethers.getContractFactory("Events")).deploy();
     events = weiroll.Contract.createLibrary(eventsContract);
-
-    const StateTest = await ethers.getContractFactory("StateTest");
-    stateTest = await StateTest.deploy();
 
     const VM = await ethers.getContractFactory("TestableVM");
     vm = await VM.deploy();
@@ -42,16 +50,16 @@ describe("VM", function () {
     ).deploy(supply);
   });
 
-  function execute(commands, state) {
+  function execute(commands, state, overrides) {
     let encodedCommands = commands.map(([target, func, inargs, outargs]) =>
       ethers.utils.concat([
-        target.interface.getSighash(func),
+        func ? target.interface.getSighash(func) : "0x12345678",
         inargs,
         outargs,
         target.address,
       ])
     );
-    return vm.execute(encodedCommands, state);
+    return vm.execute(encodedCommands, state, { ...overrides });
   }
 
   it("Should return msg.sender", async () => {
@@ -69,6 +77,55 @@ describe("VM", function () {
 
     const receipt = await tx.wait();
     console.log(`Msg.sender: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should call fallback", async () => {
+    const commands = [[fallback, "", "0x2180ffffffffff", "0xff"]];
+    const state = ["0x"];
+
+    const tx = await execute(commands, state);
+    await expect(tx).to.not.emit(fallbackContract, "LogBytes");
+
+    const receipt = await tx.wait();
+    console.log(`fallback: ${receipt.gasUsed.toNumber()} gas`);
+  });
+
+  it("Should call fallback with overriden msg.data and msg.value", async () => {
+    const msgValue = ethers.constants.WeiPerEther;
+    const msgData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(testString));
+
+    const commands = [[fallback, "", "0x230081ffffffff", "0xff"]];
+    const state = [
+      ethers.utils.hexZeroPad(msgValue.toHexString(), "32"),
+      msgData,
+    ];
+
+    const tx = await execute(commands, state, { value: msgValue });
+    await expect(tx).to.emit(fallbackContract, "LogUint").withArgs(msgValue);
+    await expect(tx).to.emit(fallbackContract, "LogBytes").withArgs(msgData);
+
+    const receipt = await tx.wait();
+    console.log(
+      `fallback (override msg.value & msg.data): ${receipt.gasUsed.toNumber()} gas`
+    );
+  });
+
+  it("Should call function named fallback with msg.value", async () => {
+    const planner = new weiroll.Planner();
+
+    const msgValue = ethers.constants.WeiPerEther;
+    const data = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(testString));
+
+    planner.add(fallback.fallback(data).withValue(msgValue));
+
+    const { commands, state } = planner.plan();
+
+    const tx = await vm.execute(commands, state, { value: msgValue });
+    await expect(tx).to.emit(fallbackContract, "LogUint").withArgs(msgValue);
+    await expect(tx).to.emit(fallbackContract, "LogBytes").withArgs(data);
+
+    const receipt = await tx.wait();
+    console.log(`fallback (named function): ${receipt.gasUsed.toNumber()} gas`);
   });
 
   it("Should execute a simple addition program", async () => {
@@ -138,19 +195,21 @@ describe("VM", function () {
   });
 
   it("Should execute payable function", async () => {
-    const amount = appendDecimals(123);
+    const amount = ethers.constants.WeiPerEther.mul(123);
     const planner = new weiroll.Planner();
 
     planner.add(payable.pay().withValue(amount));
     const balance = planner.add(payable.balance());
-    planner.add(events.logUintPayable(balance));
+    planner.add(
+      weiroll.Contract.createContract(eventsContract).logUint(balance)
+    );
     const { commands, state } = planner.plan();
 
     const tx = await vm.execute(commands, state, { value: amount });
-    await expect(tx)
-      .to.emit(eventsContract.attach(vm.address), "LogUint")
-      .withArgs(amount);
-    expect(await ethers.provider.getBalance(payable.address)).to.be.equal(amount);
+    await expect(tx).to.emit(eventsContract, "LogUint").withArgs(amount);
+    expect(await ethers.provider.getBalance(payable.address)).to.be.equal(
+      amount
+    );
 
     const receipt = await tx.wait();
     console.log(`Payable: ${receipt.gasUsed.toNumber()} gas`);

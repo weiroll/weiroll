@@ -3,7 +3,6 @@
 pragma solidity ^0.8.11;
 
 library CommandBuilder {
-
     uint256 constant IDX_VARIABLE_LENGTH = 0x80;
     uint256 constant IDX_VALUE_MASK = 0x7f;
     uint256 constant IDX_END_OF_ARGS = 0xff;
@@ -14,14 +13,14 @@ library CommandBuilder {
         bytes4 selector,
         bytes32 indices
     ) internal view returns (bytes memory ret) {
+        uint256 idx;
+
         uint256 count; // Number of bytes in whole ABI encoded message
         uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
-        uint256 idx;
-
         // Determine the length of the encoded data
-        for (uint256 i; i < 32;) {
+        for (uint256 i; i < 32; ) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -47,8 +46,12 @@ library CommandBuilder {
                 );
                 count += 32;
             }
-            unchecked{free += 32;}
-            unchecked{++i;}
+            unchecked {
+                free += 32;
+            }
+            unchecked {
+                ++i;
+            }
         }
 
         // Encode it
@@ -57,7 +60,7 @@ library CommandBuilder {
             mstore(add(ret, 32), selector)
         }
         count = 0;
-        for (uint256 i; i < 32;) {
+        for (uint256 i; i < 32; ) {
             idx = uint8(indices[i]);
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -91,8 +94,12 @@ library CommandBuilder {
                     mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
                 }
             }
-            unchecked{count += 32;}
-            unchecked{++i;}
+            unchecked {
+                count += 32;
+            }
+            unchecked {
+                ++i;
+            }
         }
     }
 
