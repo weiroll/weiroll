@@ -77,9 +77,9 @@ Each 1-byte argument specifier value describes how each input or output argument
 └───┴───────────────────────────┘
 ```
 
-The `var` flag indicates if the indexed value should be treated as fixed- or variable-length. If `var == 0b`, the argument is fixed-length, and `idx`, is treated as the index into the state array at which the value is located. The state entry at that index must be exactly 32 bytes long (except if overriding msg.data directly via `dat` flag).
+The `var` flag indicates if the indexed value should be treated as fixed- or variable-length. If `var == 0b0`, the argument is fixed-length, and `idx`, is treated as the index into the state array at which the value is located. The state entry at that index must be exactly 32 bytes long (except if overriding msg.data directly via `dat` flag).
 
-If `var == 1b`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long (except if overriding msg.data directly via `dat` flag).
+If `var == 0b10000000`, the indexed value is treated as variable-length, and `idx` is treated as the index into the state array at which the value is located. The value must be a multiple of 32 bytes long (except if overriding msg.data directly via `dat` flag).
 
 The vm handles the "head" part of ABI-encoding and decoding for variable-length values, so the state elements for these should be the "tail" part of the encoding - for example, a string encodes as a 32 byte length field followed by the string data, padded to a 32-byte boundary, and an array of `uint`s is a 32 byte count followed by the concatenation of all the uints.
 
@@ -109,9 +109,9 @@ function add(uint a, uint b) external returns (uint);
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
 
-`f` should specify this is a delegatecall (`0x00`), `in` needs to specify two input values of fixed length (`var == 0b`). The remaining four input parameters are unneeded and should be set to `0xff`. Supposing the two inputs should come from state elements 0 and 1, the encoded `in` data is thus `0x000001ffffffff`.
+`f` should specify this is a delegatecall (`0x00`), `in` needs to specify two input values of fixed length (`var == 0b0`). The remaining four input parameters are unneeded and should be set to `0xff`. Supposing the two inputs should come from state elements 0 and 1, the encoded `in` data is thus `0x000001ffffffff`.
 
-`out` needs to specify that the output value is fixed length (`var == 0b`). Supposing the output should be written to state element 2, the encoded `out` data is thus `0x02`.
+`out` needs to specify that the output value is fixed length (`var == 0b0`). Supposing the output should be written to state element 2, the encoded `out` data is thus `0x02`.
 
 #### Variable length input and output values
 
@@ -123,9 +123,9 @@ function concatBytes32(bytes32[] inputs) external returns (bytes);
 
 `sel` should be set to the function selector for this function, and `target` to the address of the deployed contract containing this function.
 
-`f` should specify this is a delegatecall (`0x00`), `in` needs to specify one input value of variable length (`var == 1b`), that is an array of 32-byte words (`ws == 1b`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0x00c0ffffffffff`.
+`f` should specify this is a delegatecall (`0x00`), `in` needs to specify one input value of variable length (`var == 0b10000000`), that is an array of 32-byte words (`idx == 0b1000000`). The remaining five input parameters are unneeded and should be set to `0xff`. Supposing the input comes from state element 0, the encoded `in` data is thus `0x00c0ffffffffff`.
 
-`out` needs to specify that the output value is variable length (`var == 1b`). Supposing the output value should be written to state element 1, the encoded `out` data is thus `0x81`.
+`out` needs to specify that the output value is variable length (`var == 0b10000000`). Supposing the output value should be written to state element 1, the encoded `out` data is thus `0x81`.
 
 ## Command execution
 
