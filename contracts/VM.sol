@@ -127,7 +127,9 @@ abstract contract VM {
                     }
                 }
                 revert ExecutionFailed({
-                    command_index: i,
+                    command_index: flags & FLAG_EXTENDED_COMMAND == 0
+                        ? i
+                        : i - 1,
                     target: address(uint160(uint256(command))),
                     message: outdata.length > 0 ? string(outdata) : "Unknown"
                 });
