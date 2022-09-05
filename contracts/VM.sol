@@ -48,7 +48,8 @@ abstract contract VM {
             flags = uint256(uint8(bytes1(command << 32)));
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[_uncheckedIncrement(i)];
+                i = _uncheckedIncrement(i);
+                indices = commands[i];
             } else {
                 indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
             }
@@ -110,8 +111,9 @@ abstract contract VM {
                             indices << 8 // skip value input
                         )
                         : state[
-                            uint8(bytes1(indices << 8)) &
-                                CommandBuilder.IDX_VALUE_MASK
+                            uint8(
+                                bytes1(indices << 8) // skip value input
+                            ) & CommandBuilder.IDX_VALUE_MASK
                         ]
                 );
             } else {
