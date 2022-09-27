@@ -41,7 +41,7 @@ abstract contract VM {
         bytes memory outdata;
 
         uint256 commandsLength = commands.length;
-        for (uint256 i; i < commandsLength; i=_uncheckedIncrement(i)) {
+        for (uint256 i; i < commandsLength;) {
             command = commands[i];
             flags = uint256(uint8(bytes1(command << 32)));
 
@@ -116,13 +116,8 @@ abstract contract VM {
             } else {
                 state = state.writeOutputs(bytes1(command << 88), outdata);
             }
+            unchecked{++i;}
         }
         return state;
     }
-
-    function _uncheckedIncrement(uint256 i) private pure returns(uint256) {
-        unchecked {++i;}
-        return i;
-    }
 }
-
