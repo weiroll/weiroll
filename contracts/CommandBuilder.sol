@@ -38,12 +38,22 @@ library CommandBuilder {
                     count += stateData.length;
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
-                    uint256 arglen = state[idx & IDX_VALUE_MASK].length;
+                    uint256 arglen;
+                    assembly {
+                        // state[idx & 0x7f] => load pointer from state + 32 + (idx & 0x7f) * 32, then load length
+                        let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                        arglen := mload(stateElement)
+                    }
                     if (arglen % 32 != 0) revert InvalidDynamicLength();
                     count += arglen + 32;
                 }
             } else {
-                if (state[idx & IDX_VALUE_MASK].length != 32) revert InvalidStaticLength();
+                uint256 arglen;
+                assembly {
+                    let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                    arglen := mload(stateElement)
+                }
+                if (arglen != 32) revert InvalidStaticLength();
                 count += 32;
             }
             unchecked{free += 32;}
@@ -68,14 +78,19 @@ library CommandBuilder {
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
                     free += stateData.length - 32;
                 } else {
-                    uint256 arglen = state[idx & IDX_VALUE_MASK].length;
+                    bytes memory stateElement;
+                    uint256 arglen;
+                    assembly {
+                        stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                        arglen := mload(stateElement)
+                    }
 
                     // Variable length data; put a pointer in the slot and write the data at the end
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
                     memcpy(
-                        state[idx & IDX_VALUE_MASK],
+                        stateElement,
                         0,
                         ret,
                         free + 4,
@@ -85,9 +100,9 @@ library CommandBuilder {
                 }
             } else {
                 // Fixed length data; write it directly
-                bytes memory statevar = state[idx & IDX_VALUE_MASK];
                 assembly {
-                    mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                    mstore(add(add(ret, 36), count), mload(add(stateElement, 32)))
                 }
             }
             unchecked{count += 32;}
