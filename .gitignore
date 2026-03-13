@@ -1,5 +1,3 @@
-node_modules
-
-#Hardhat files
-cache
-artifacts
+# Foundry
+out/
+cache/
