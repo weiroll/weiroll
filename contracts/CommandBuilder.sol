@@ -60,9 +60,13 @@ library CommandBuilder {
             unchecked{++i;}
         }
 
-        // Encode it
-        unchecked { ret = new bytes(count + 4); }
+        // Encode it - use assembly allocation to skip memory zeroing
         assembly {
+            let size := add(count, 4)
+            ret := mload(0x40)
+            mstore(ret, size)
+            // Update free memory pointer (length word + data, rounded up to 32)
+            mstore(0x40, add(add(ret, 32), and(add(size, 31), not(31))))
             mstore(add(ret, 32), selector)
         }
         count = 0;
