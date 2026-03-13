@@ -9,6 +9,11 @@ library CommandBuilder {
     uint256 constant IDX_END_OF_ARGS = 0xff;
     uint256 constant IDX_USE_STATE = 0xfe;
 
+    error InvalidDynamicLength();
+    error InvalidStaticLength();
+    error InvalidReturnVariable();
+    error InvalidReturnStatic();
+
     function buildInputs(
         bytes[] memory state,
         bytes4 selector,
@@ -34,17 +39,11 @@ library CommandBuilder {
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
-                    require(
-                        arglen % 32 == 0,
-                        "Dynamic state variables must be a multiple of 32 bytes"
-                    );
+                    if (arglen % 32 != 0) revert InvalidDynamicLength();
                     count += arglen + 32;
                 }
             } else {
-                require(
-                    state[idx & IDX_VALUE_MASK].length == 32,
-                    "Static state variables must be 32 bytes"
-                );
+                if (state[idx & IDX_VALUE_MASK].length != 32) revert InvalidStaticLength();
                 count += 32;
             }
             unchecked{free += 32;}
@@ -113,10 +112,7 @@ library CommandBuilder {
                 assembly {
                     argptr := mload(add(output, 32))
                 }
-                require(
-                    argptr == 32,
-                    "Only one return value permitted (variable)"
-                );
+                if (argptr != 32) revert InvalidReturnVariable();
 
                 assembly {
                     // Overwrite the first word of the return data with the length - 32
@@ -130,10 +126,7 @@ library CommandBuilder {
             }
         } else {
             // Single word
-            require(
-                output.length == 32,
-                "Only one return value permitted (static)"
-            );
+            if (output.length != 32) revert InvalidReturnStatic();
 
             state[idx & IDX_VALUE_MASK] = output;
         }
