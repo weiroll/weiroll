@@ -26,6 +26,7 @@ library CommandBuilder {
         uint256 idx;
 
         // Determine the length of the encoded data
+        // This first loop only counts, no encoding
         for (uint256 i; i < 32;) {
             assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
@@ -37,10 +38,8 @@ library CommandBuilder {
                     }
                     unchecked { count += stateData.length; }
                 } else {
-                    // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
                     uint256 arglen;
                     assembly {
-                        // state[idx & 0x7f] => load pointer from state + 32 + (idx & 0x7f) * 32, then load length
                         let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
                         arglen := mload(stateElement)
                     }
@@ -48,12 +47,16 @@ library CommandBuilder {
                     unchecked { count += arglen + 32; }
                 }
             } else {
-                uint256 arglen;
+                // For static args we just need to verify length and add 32
                 assembly {
                     let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
-                    arglen := mload(stateElement)
+                    let arglen := mload(stateElement)
+                    if iszero(eq(arglen, 32)) {
+                        // revert InvalidStaticLength()
+                        mstore(0, 0xb4fa3fb300000000000000000000000000000000000000000000000000000000)
+                        revert(0, 4)
+                    }
                 }
-                if (arglen != 32) revert InvalidStaticLength();
                 unchecked { count += 32; }
             }
             unchecked{free += 32;}
@@ -91,7 +94,6 @@ library CommandBuilder {
                         arglen := mload(stateElement)
                     }
 
-                    // Variable length data; put a pointer in the slot and write the data at the end
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
