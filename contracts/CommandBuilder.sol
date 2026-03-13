@@ -27,7 +27,7 @@ library CommandBuilder {
 
         // Determine the length of the encoded data
         for (uint256 i; i < 32;) {
-            idx = uint8(indices[i]);
+            assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
@@ -67,7 +67,7 @@ library CommandBuilder {
         }
         count = 0;
         for (uint256 i; i < 32;) {
-            idx = uint8(indices[i]);
+            assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
 
             if (idx & IDX_VARIABLE_LENGTH != 0) {
