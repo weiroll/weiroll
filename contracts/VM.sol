@@ -49,7 +49,7 @@ abstract contract VM {
             }
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
+                unchecked { indices = commands[i++]; }
             } else {
                 assembly {
                     indices := or(shl(40, command), SHORT_COMMAND_FILL)
