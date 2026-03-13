@@ -49,7 +49,10 @@ abstract contract VM {
             }
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                unchecked { indices = commands[i++]; }
+                unchecked {
+                    assembly { indices := calldataload(add(commands.offset, mul(i, 32))) }
+                    ++i;
+                }
             } else {
                 assembly {
                     indices := or(shl(40, command), SHORT_COMMAND_FILL)
