@@ -43,7 +43,10 @@ abstract contract VM {
         uint256 commandsLength = commands.length;
         for (uint256 i; i < commandsLength;) {
             command = commands[i];
-            flags = uint256(uint8(bytes1(command << 32)));
+            // Extract flags byte (byte 4 of command) using assembly
+            assembly {
+                flags := byte(4, command)
+            }
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
