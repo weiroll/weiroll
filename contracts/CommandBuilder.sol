@@ -163,7 +163,11 @@ library CommandBuilder {
         uint256 idx = uint256(uint8(index));
         if (idx == IDX_END_OF_ARGS) return;
 
-        bytes memory entry = state[idx] = new bytes(output.length + 32);
+        bytes memory entry = new bytes(output.length + 32);
+        // Use assembly to bypass bounds check on state array write
+        assembly {
+            mstore(add(add(state, 32), mul(idx, 32)), entry)
+        }
         memcpy(output, 0, entry, 32, output.length);
         assembly {
             let l := mload(output)
