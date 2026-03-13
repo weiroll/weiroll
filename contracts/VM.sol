@@ -42,9 +42,9 @@ abstract contract VM {
 
         uint256 commandsLength = commands.length;
         for (uint256 i; i < commandsLength;) {
-            assembly { command := calldataload(add(commands.offset, mul(i, 32))) }
-            // Extract flags byte (byte 4 of command) using assembly
+            // Load command and extract flags in a single assembly block
             assembly {
+                command := calldataload(add(commands.offset, mul(i, 32)))
                 flags := byte(4, command)
             }
 
