@@ -51,7 +51,9 @@ abstract contract VM {
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
             } else {
-                indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
+                assembly {
+                    indices := or(shl(40, command), SHORT_COMMAND_FILL)
+                }
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
