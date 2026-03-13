@@ -85,7 +85,10 @@ abstract contract VM {
                 );
             } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
                 uint256 calleth;
-                bytes memory v = state[uint8(bytes1(indices))];
+                bytes memory v;
+                assembly {
+                    v := mload(add(add(state, 32), mul(byte(0, indices), 32)))
+                }
                 if (v.length != 32) revert ExecutionFailed(i, address(uint160(uint256(command))), "no value");
                 assembly {
                     calleth := mload(add(v, 0x20))
