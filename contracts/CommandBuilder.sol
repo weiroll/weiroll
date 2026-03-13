@@ -44,7 +44,7 @@ library CommandBuilder {
                         let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
                         arglen := mload(stateElement)
                     }
-                    if (arglen % 32 != 0) revert InvalidDynamicLength();
+                    if (arglen & 31 != 0) revert InvalidDynamicLength();
                     unchecked { count += arglen + 32; }
                 }
             } else {
@@ -61,7 +61,7 @@ library CommandBuilder {
         }
 
         // Encode it
-        ret = new bytes(count + 4);
+        unchecked { ret = new bytes(count + 4); }
         assembly {
             mstore(add(ret, 32), selector)
         }
@@ -75,8 +75,10 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
-                    unchecked { free += stateData.length - 32; }
+                    unchecked {
+                        memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
+                        free += stateData.length - 32;
+                    }
                 } else {
                     bytes memory stateElement;
                     uint256 arglen;
@@ -89,14 +91,16 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(
-                        stateElement,
-                        0,
-                        ret,
-                        free + 4,
-                        arglen
-                    );
-                    unchecked { free += arglen; }
+                    unchecked {
+                        memcpy(
+                            stateElement,
+                            0,
+                            ret,
+                            free + 4,
+                            arglen
+                        );
+                        free += arglen;
+                    }
                 }
             } else {
                 // Fixed length data; write it directly
