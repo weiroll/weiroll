@@ -35,7 +35,7 @@ library CommandBuilder {
                     if (stateData.length == 0) {
                         stateData = abi.encode(state);
                     }
-                    count += stateData.length;
+                    unchecked { count += stateData.length; }
                 } else {
                     // Add the size of the value, rounded up to the next word boundary, plus space for pointer and length
                     uint256 arglen;
@@ -45,7 +45,7 @@ library CommandBuilder {
                         arglen := mload(stateElement)
                     }
                     if (arglen % 32 != 0) revert InvalidDynamicLength();
-                    count += arglen + 32;
+                    unchecked { count += arglen + 32; }
                 }
             } else {
                 uint256 arglen;
@@ -54,7 +54,7 @@ library CommandBuilder {
                     arglen := mload(stateElement)
                 }
                 if (arglen != 32) revert InvalidStaticLength();
-                count += 32;
+                unchecked { count += 32; }
             }
             unchecked{free += 32;}
             unchecked{++i;}
@@ -76,7 +76,7 @@ library CommandBuilder {
                         mstore(add(add(ret, 36), count), free)
                     }
                     memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
-                    free += stateData.length - 32;
+                    unchecked { free += stateData.length - 32; }
                 } else {
                     bytes memory stateElement;
                     uint256 arglen;
@@ -96,7 +96,7 @@ library CommandBuilder {
                         free + 4,
                         arglen
                     );
-                    free += arglen;
+                    unchecked { free += arglen; }
                 }
             } else {
                 // Fixed length data; write it directly
