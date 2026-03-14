@@ -80,29 +80,25 @@ abstract contract VM {
                         indices
                     )
                 );
-            } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
+            } else {
+                // FLAG_CT_VALUECALL (0x03) - the only remaining case
                 uint256 calleth;
                 bytes memory v;
                 assembly {
                     v := mload(add(add(state, 32), shl(5, byte(0, indices))))
                     if iszero(eq(mload(v), 32)) {
-                        // revert - value call has no value indicated
                         revert(0, 0)
                     }
                     calleth := mload(add(v, 0x20))
                 }
-                (success, outdata) = address(uint160(uint256(command))).call{ // target
+                (success, outdata) = address(uint160(uint256(command))).call{
                     value: calleth
                 }(
-                    // inputs
                     state.buildInputs(
-                        //selector
                         bytes4(command),
                         bytes32(uint256(indices << 8) | CommandBuilder.IDX_END_OF_ARGS)
                     )
                 );
-            } else {
-                assembly { revert(0, 0) }
             }
 
             if (!success) {
