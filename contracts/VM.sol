@@ -112,16 +112,9 @@ abstract contract VM {
             }
 
             if (!success) {
-                if (outdata.length > 0) {
-                    assembly {
-                        outdata := add(outdata, 68)
-                    }
+                assembly {
+                    revert(add(outdata, 32), mload(outdata))
                 }
-                revert ExecutionFailed({
-                    command_index: 0,
-                    target: address(uint160(uint256(command))),
-                    message: outdata.length > 0 ? string(outdata) : "Unknown"
-                });
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
