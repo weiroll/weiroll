@@ -25,10 +25,11 @@ library CommandBuilder {
         bytes memory stateData; // Optionally encode the current state if the call requires it
 
         uint256 idx;
+        uint256 i;
 
         // Determine the length of the encoded data
         // This first loop only counts, no encoding
-        for (uint256 i; i < 32;) {
+        for (; i < 32;) {
             assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
 
@@ -64,9 +65,10 @@ library CommandBuilder {
                 }
                 unchecked { count += 32; }
             }
-            unchecked{free += 32;}
             unchecked{++i;}
         }
+        // free = numArgs * 32
+        assembly { free := shl(5, i) }
 
         // Encode it - use assembly allocation to skip memory zeroing
         assembly {
