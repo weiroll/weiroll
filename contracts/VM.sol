@@ -20,12 +20,6 @@ abstract contract VM {
 
     address immutable self;
 
-    error ExecutionFailed(
-        uint256 command_index,
-        address target,
-        string message
-    );
-
     constructor() {
         self = address(this);
     }
@@ -42,13 +36,21 @@ abstract contract VM {
 
         uint256 commandsLength = commands.length;
         for (uint256 i; i < commandsLength;) {
-            command = commands[i];
-            flags = uint256(uint8(bytes1(command << 32)));
+            // Load command and extract flags in a single assembly block
+            assembly {
+                command := calldataload(add(commands.offset, shl(5, i)))
+                flags := byte(4, command)
+            }
 
-            if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
+            if (flags >= FLAG_EXTENDED_COMMAND) {
+                unchecked {
+                    assembly { indices := calldataload(add(commands.offset, shl(5, i))) }
+                    ++i;
+                }
             } else {
-                indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
+                assembly {
+                    indices := or(shl(40, command), SHORT_COMMAND_FILL)
+                }
             }
 
             if (flags & FLAG_CT_MASK == FLAG_CT_DELEGATECALL) {
@@ -78,38 +80,32 @@ abstract contract VM {
                         indices
                     )
                 );
-            } else if (flags & FLAG_CT_MASK == FLAG_CT_VALUECALL) {
+            } else {
+                // FLAG_CT_VALUECALL (0x03) - the only remaining case
                 uint256 calleth;
-                bytes memory v = state[uint8(bytes1(indices))];
-                require(v.length == 32, "_execute: value call has no value indicated.");
+                bytes memory v;
                 assembly {
+                    v := mload(add(add(state, 32), shl(5, byte(0, indices))))
+                    if iszero(eq(mload(v), 32)) {
+                        revert(0, 0)
+                    }
                     calleth := mload(add(v, 0x20))
+                    indices := or(shl(8, indices), 0xff)
                 }
-                (success, outdata) = address(uint160(uint256(command))).call{ // target
+                (success, outdata) = address(uint160(uint256(command))).call{
                     value: calleth
                 }(
-                    // inputs
                     state.buildInputs(
-                        //selector
                         bytes4(command),
-                        bytes32(uint256(indices << 8) | CommandBuilder.IDX_END_OF_ARGS)
+                        indices
                     )
                 );
-            } else {
-                revert("Invalid calltype");
             }
 
             if (!success) {
-                if (outdata.length > 0) {
-                    assembly {
-                        outdata := add(outdata, 68)
-                    }
+                assembly {
+                    revert(add(outdata, 32), mload(outdata))
                 }
-                revert ExecutionFailed({
-                    command_index: 0,
-                    target: address(uint160(uint256(command))),
-                    message: outdata.length > 0 ? string(outdata) : "Unknown"
-                });
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
