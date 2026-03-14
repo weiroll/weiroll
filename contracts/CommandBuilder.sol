@@ -77,7 +77,8 @@ library CommandBuilder {
             mstore(0x40, add(add(ret, 32), and(add(size, 31), not(31))))
             mstore(add(ret, 32), selector)
         }
-        count = 0;
+        // Use count as a write pointer (absolute memory address) instead of offset
+        assembly { count := add(ret, 36) }
         for (uint256 i; i < 32;) {
             assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
@@ -85,7 +86,7 @@ library CommandBuilder {
             if (idx & IDX_VARIABLE_LENGTH != 0) {
                 if (idx == IDX_USE_STATE) {
                     assembly {
-                        mstore(add(add(ret, 36), count), free)
+                        mstore(count, free)
                     }
                     unchecked {
                         memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
@@ -100,7 +101,7 @@ library CommandBuilder {
                     }
 
                     assembly {
-                        mstore(add(add(ret, 36), count), free)
+                        mstore(count, free)
                     }
                     unchecked {
                         memcpy(
@@ -117,7 +118,7 @@ library CommandBuilder {
                 // Fixed length data; write it directly
                 assembly {
                     let stateElement := mload(add(add(state, 32), shl(5, and(idx, 0x7f))))
-                    mstore(add(add(ret, 36), count), mload(add(stateElement, 32)))
+                    mstore(count, mload(add(stateElement, 32)))
                 }
             }
             unchecked{count += 32;}
