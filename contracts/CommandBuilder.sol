@@ -152,11 +152,12 @@ library CommandBuilder {
                 }
             }
         } else {
-            // Single word
-            if (output.length != 32) revert InvalidReturnStatic();
-
-            // Use assembly to bypass bounds checking for state array write
+            // Single word - check length and write in one assembly block
             assembly {
+                if iszero(eq(mload(output), 32)) {
+                    mstore(0, 0x71c4efc100000000000000000000000000000000000000000000000000000000)
+                    revert(0, 4)
+                }
                 mstore(
                     add(add(state, 32), mul(and(idx, IDX_VALUE_MASK), 32)),
                     output
