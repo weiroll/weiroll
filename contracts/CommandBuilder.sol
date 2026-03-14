@@ -9,10 +9,11 @@ library CommandBuilder {
     uint256 constant IDX_END_OF_ARGS = 0xff;
     uint256 constant IDX_USE_STATE = 0xfe;
 
-    error InvalidDynamicLength();
-    error InvalidStaticLength();
-    error InvalidReturnVariable();
-    error InvalidReturnStatic();
+    // Error selectors used in assembly revert blocks:
+    // InvalidDynamicLength() = 0xbad2f669
+    // InvalidStaticLength()  = 0xb4fa3fb3
+    // InvalidReturnVariable() = 0x09bad878
+    // InvalidReturnStatic()  = 0x71c4efc1
 
     function buildInputs(
         bytes[] memory state,
