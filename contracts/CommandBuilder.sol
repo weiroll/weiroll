@@ -40,7 +40,7 @@ library CommandBuilder {
                 } else {
                     uint256 arglen;
                     assembly {
-                        let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                        let stateElement := mload(add(add(state, 32), shl(5, and(idx, 0x7f))))
                         arglen := mload(stateElement)
                         if and(arglen, 31) {
                             // revert InvalidDynamicLength()
@@ -53,7 +53,7 @@ library CommandBuilder {
             } else {
                 // For static args we just need to verify length and add 32
                 assembly {
-                    let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                    let stateElement := mload(add(add(state, 32), shl(5, and(idx, 0x7f))))
                     let arglen := mload(stateElement)
                     if iszero(eq(arglen, 32)) {
                         // revert InvalidStaticLength()
@@ -94,7 +94,7 @@ library CommandBuilder {
                     bytes memory stateElement;
                     uint256 arglen;
                     assembly {
-                        stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                        stateElement := mload(add(add(state, 32), shl(5, and(idx, 0x7f))))
                         arglen := mload(stateElement)
                     }
 
@@ -115,7 +115,7 @@ library CommandBuilder {
             } else {
                 // Fixed length data; write it directly
                 assembly {
-                    let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
+                    let stateElement := mload(add(add(state, 32), shl(5, and(idx, 0x7f))))
                     mstore(add(add(ret, 36), count), mload(add(stateElement, 32)))
                 }
             }
@@ -146,7 +146,7 @@ library CommandBuilder {
                     mstore(add(output, 32), sub(mload(output), 32))
                     // Insert a pointer to the return data, starting at the second word, into state
                     mstore(
-                        add(add(state, 32), mul(and(idx, IDX_VALUE_MASK), 32)),
+                        add(add(state, 32), shl(5, and(idx, IDX_VALUE_MASK))),
                         add(output, 32)
                     )
                 }
@@ -159,7 +159,7 @@ library CommandBuilder {
                     revert(0, 4)
                 }
                 mstore(
-                    add(add(state, 32), mul(and(idx, IDX_VALUE_MASK), 32)),
+                    add(add(state, 32), shl(5, and(idx, IDX_VALUE_MASK))),
                     output
                 )
             }
@@ -184,7 +184,7 @@ library CommandBuilder {
             mstore(entry, size)
             mstore(0x40, add(add(entry, 32), and(add(size, 31), not(31))))
             // Write entry to state[idx]
-            mstore(add(add(state, 32), mul(idx, 32)), entry)
+            mstore(add(add(state, 32), shl(5, idx)), entry)
         }
         memcpy(output, 0, entry, 32, output.length);
         assembly {

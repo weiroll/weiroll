@@ -44,13 +44,13 @@ abstract contract VM {
         for (uint256 i; i < commandsLength;) {
             // Load command and extract flags in a single assembly block
             assembly {
-                command := calldataload(add(commands.offset, mul(i, 32)))
+                command := calldataload(add(commands.offset, shl(5, i)))
                 flags := byte(4, command)
             }
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 unchecked {
-                    assembly { indices := calldataload(add(commands.offset, mul(i, 32))) }
+                    assembly { indices := calldataload(add(commands.offset, shl(5, i))) }
                     ++i;
                 }
             } else {
@@ -90,7 +90,7 @@ abstract contract VM {
                 uint256 calleth;
                 bytes memory v;
                 assembly {
-                    v := mload(add(add(state, 32), mul(byte(0, indices), 32)))
+                    v := mload(add(add(state, 32), shl(5, byte(0, indices))))
                 }
                 if (v.length != 32) revert ExecutionFailed(i, address(uint160(uint256(command))), "no value");
                 assembly {
