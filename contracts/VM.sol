@@ -42,7 +42,7 @@ abstract contract VM {
                 flags := byte(4, command)
             }
 
-            if (flags & FLAG_EXTENDED_COMMAND != 0) {
+            if (flags >= FLAG_EXTENDED_COMMAND) {
                 unchecked {
                     assembly { indices := calldataload(add(commands.offset, shl(5, i))) }
                     ++i;
