@@ -20,12 +20,6 @@ abstract contract VM {
 
     address immutable self;
 
-    error ExecutionFailed(
-        uint256 command_index,
-        address target,
-        string message
-    );
-
     constructor() {
         self = address(this);
     }
@@ -108,7 +102,7 @@ abstract contract VM {
                     )
                 );
             } else {
-                revert ExecutionFailed(i, address(uint160(uint256(command))), "bad calltype");
+                assembly { revert(0, 0) }
             }
 
             if (!success) {
