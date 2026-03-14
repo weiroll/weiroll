@@ -42,8 +42,12 @@ library CommandBuilder {
                     assembly {
                         let stateElement := mload(add(add(state, 32), mul(and(idx, 0x7f), 32)))
                         arglen := mload(stateElement)
+                        if and(arglen, 31) {
+                            // revert InvalidDynamicLength()
+                            mstore(0, 0xbad2f66900000000000000000000000000000000000000000000000000000000)
+                            revert(0, 4)
+                        }
                     }
-                    if (arglen & 31 != 0) revert InvalidDynamicLength();
                     unchecked { count += arglen + 32; }
                 }
             } else {
