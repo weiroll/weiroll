@@ -136,14 +136,12 @@ library CommandBuilder {
             if (idx == IDX_USE_STATE) {
                 state = abi.decode(output, (bytes[]));
             } else {
-                // Check the first field is 0x20 (because we have only a single return value)
-                uint256 argptr;
                 assembly {
-                    argptr := mload(add(output, 32))
-                }
-                if (argptr != 32) revert InvalidReturnVariable();
-
-                assembly {
+                    // Check the first field is 0x20 (because we have only a single return value)
+                    if iszero(eq(mload(add(output, 32)), 32)) {
+                        mstore(0, 0x09bad87800000000000000000000000000000000000000000000000000000000)
+                        revert(0, 4)
+                    }
                     // Overwrite the first word of the return data with the length - 32
                     mstore(add(output, 32), sub(mload(output), 32))
                     // Insert a pointer to the return data, starting at the second word, into state
