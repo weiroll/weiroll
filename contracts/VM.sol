@@ -91,9 +91,10 @@ abstract contract VM {
                 bytes memory v;
                 assembly {
                     v := mload(add(add(state, 32), shl(5, byte(0, indices))))
-                }
-                if (v.length != 32) revert ExecutionFailed(i, address(uint160(uint256(command))), "no value");
-                assembly {
+                    if iszero(eq(mload(v), 32)) {
+                        // revert - value call has no value indicated
+                        revert(0, 0)
+                    }
                     calleth := mload(add(v, 0x20))
                 }
                 (success, outdata) = address(uint160(uint256(command))).call{ // target
