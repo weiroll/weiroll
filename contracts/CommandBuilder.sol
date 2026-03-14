@@ -33,7 +33,7 @@ library CommandBuilder {
             assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
 
-            if (idx & IDX_VARIABLE_LENGTH != 0) {
+            if (idx >= IDX_VARIABLE_LENGTH) {
                 if (idx == IDX_USE_STATE) {
                     if (stateData.length == 0) {
                         stateData = abi.encode(state);
@@ -85,7 +85,7 @@ library CommandBuilder {
             assembly { idx := byte(i, indices) }
             if (idx == IDX_END_OF_ARGS) break;
 
-            if (idx & IDX_VARIABLE_LENGTH != 0) {
+            if (idx >= IDX_VARIABLE_LENGTH) {
                 if (idx == IDX_USE_STATE) {
                     assembly {
                         mstore(count, free)
@@ -136,7 +136,7 @@ library CommandBuilder {
         uint256 idx = uint8(index);
         if (idx == IDX_END_OF_ARGS) return state;
 
-        if (idx & IDX_VARIABLE_LENGTH != 0) {
+        if (idx >= IDX_VARIABLE_LENGTH) {
             if (idx == IDX_USE_STATE) {
                 state = abi.decode(output, (bytes[]));
             } else {
