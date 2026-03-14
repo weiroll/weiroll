@@ -90,13 +90,14 @@ abstract contract VM {
                         revert(0, 0)
                     }
                     calleth := mload(add(v, 0x20))
+                    indices := or(shl(8, indices), 0xff)
                 }
                 (success, outdata) = address(uint160(uint256(command))).call{
                     value: calleth
                 }(
                     state.buildInputs(
                         bytes4(command),
-                        bytes32(uint256(indices << 8) | CommandBuilder.IDX_END_OF_ARGS)
+                        indices
                     )
                 );
             }
