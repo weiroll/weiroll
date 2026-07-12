@@ -30,8 +30,8 @@ contract TupleTest is Test {
     }
 
     function test_TupleReturnSliceFirstVar() public {
-        // Matches JS test commands:
-        // [multiReturn, "intTuple",      "0x40ffffffffffff", "0x00"]
+        // Matches weiroll.js planner encoding (CommandFlags.TUPLE_RETURN = 0x80):
+        // [multiReturn, "intTuple",      "0x80ffffffffffff", "0x00"]
         // [tupler,      "extractElement","0x008001ffffffff", "0x00"]
         // [multiReturn, "tupleConsumer", "0x0000ffffffffff", "0xff"]
 
@@ -39,7 +39,7 @@ contract TupleTest is Test {
         commands[0] = _encodeCommand(
             address(multiReturn),
             MultiReturn.intTuple.selector,
-            hex"40ffffffffffff",  // flags=0x40 (TUPLE_RETURN), indices=ffffffffffff
+            hex"80ffffffffffff",  // flags=0x80 (TUPLE_RETURN), indices=ffffffffffff
             bytes1(0x00)         // output to state[0]
         );
         commands[1] = _encodeCommand(
@@ -70,7 +70,7 @@ contract TupleTest is Test {
         commands[0] = _encodeCommand(
             address(multiReturn),
             MultiReturn.intTuple.selector,
-            hex"40ffffffffffff",
+            hex"80ffffffffffff",
             bytes1(0x00)
         );
         commands[1] = _encodeCommand(
